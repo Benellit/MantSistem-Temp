@@ -2,18 +2,79 @@ import AntDesign from '@expo/vector-icons/AntDesign';
 import Fontisto from '@expo/vector-icons/Fontisto';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import * as ImagePicker from "expo-image-picker";
+import axios from "axios";
 import { LinearGradient } from "expo-linear-gradient";
 import { collection, doc, getDoc, getDocs, getFirestore, query, setDoc, updateDoc, where } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import { Alert, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import DropDownPicker from "react-native-dropdown-picker";
 import DateTimePickerModal from "react-native-modal-datetime-picker";
-import appFirebase from '../../credenciales/Credenciales';
+import Toast from 'react-native-toast-message';
+import appFirebase, { cloudinaryConfig } from '../../credenciales/Credenciales';
 import { useAuth } from "../login/AuthContext";
 
 const RegistrarTareasGestor = ({ navigation }) => {
     const db = getFirestore(appFirebase);
     const { profile } = useAuth();
+    const [imagenes, setImagenes] = useState([]);
+
+    const mostrarOpciones = () => {
+        Alert.alert("Adjuntar imágenes", "Selecciona una opción", [
+            { text: "Tomar foto", onPress: tomarFoto },
+            { text: "Elegir desde galería", onPress: elegirDesdeGaleria },
+            { text: "Cancelar", style: "cancel" },
+        ]);
+    };
+
+    const tomarFoto = async () => {
+        const { status } = await ImagePicker.requestCameraPermissionsAsync();
+        if (status !== "granted") {
+            alert("Necesitas otorgar permiso para usar la cámara.");
+            return;
+        }
+
+        const result = await ImagePicker.launchCameraAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            quality: 1,
+        });
+
+        if (!result.canceled) {
+            setImagenes((prev) => [...prev, result.assets[0].uri]);
+        }
+    };
+
+    const elegirDesdeGaleria = async () => {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== "granted") {
+            alert("Necesitas otorgar permiso para acceder a la galería.");
+            return;
+        }
+
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsMultipleSelection: true,
+            quality: 1,
+        });
+
+        if (!result.canceled) {
+            const nuevas = result.assets.map((asset) => asset.uri);
+            setImagenes((prev) => [...prev, ...nuevas]);
+        }
+    };
+
+    const eliminarImagen = (uri) => {
+        Alert.alert("Eliminar imagen", "¿Deseas eliminar esta imagen?", [
+            { text: "Cancelar", style: "cancel" },
+            {
+                text: "Eliminar",
+                style: "destructive",
+                onPress: () => {
+                    setImagenes((prev) => prev.filter((img) => img !== uri));
+                },
+            },
+        ]);
+    };
 
     useEffect(() => {
         if (profile?.rol === "Tecnico") {
@@ -112,9 +173,38 @@ const RegistrarTareasGestor = ({ navigation }) => {
         console.log("Datos válidos, intentando crear tarea...");
         try {
             const contadorActual = await getContadorTarea();
-
             const nuevoNumero = contadorActual + 1;
-            console.log("Nuevo número de tarea:", nuevoNumero);
+
+            const urls = [];
+
+            if (imagenes && imagenes.length > 0) {
+                console.log(`Subiendo ${imagenes.length} imágenes a Cloudinary...`);
+
+                for (const uri of imagenes) {
+                    const data = new FormData();
+                    data.append("file", {
+                        uri,
+                        type: "image/jpeg",
+                        name: `tarea_${Date.now()}.jpg`,
+                    });
+                    data.append("upload_preset", cloudinaryConfig.uploadPreset);
+
+                    try {
+                        const res = await axios.post(
+                            `https://api.cloudinary.com/v1_1/${cloudinaryConfig.cloudName}/image/upload`,
+                            data,
+                            { headers: { "Content-Type": "multipart/form-data" } }
+                        );
+
+                        urls.push(res.data.secure_url);
+                        console.log("✅ Imagen subida:", res.data.secure_url);
+                    } catch (err) {
+                        console.error("❌ Error al subir imagen:", err.response?.data || err.message);
+                    }
+                }
+            } else {
+                console.log("No hay imágenes para subir.");
+            }
 
             const docRef = doc(db, "TAREA", nuevoNumero.toString());
             await setDoc(docRef, {
@@ -126,6 +216,7 @@ const RegistrarTareasGestor = ({ navigation }) => {
                 fechaEntrega: selectedDate.toISOString(),
                 IDCreador: doc(db, "USUARIO", profile?.id.toString()),
                 IDSucursal: doc(db, "SUCURSAL", valueSucursal.toString()),
+                imagenAdjuntaInstrucciones: urls,
             });
 
             console.log("Tarea guardada");
@@ -140,24 +231,7 @@ const RegistrarTareasGestor = ({ navigation }) => {
             const contadorRef = doc(db, "contador", "tarea");
             await updateDoc(contadorRef, { cantidad: nuevoNumero });
 
-            // let contadorUsuario_Tarea = await getContadorUSUARIO_TAREA();
-            // console.log("Contador usuario_tarea:", contadorUsuario_Tarea);
-
-            // for (const tecnico of arrayValueTecnicos) {
-            //     contadorUsuario_Tarea++;
-            //     const docUT = doc(db, "USUARIO_TAREA", contadorUsuario_Tarea.toString());
-            //     console.log("Guardando usuario_tarea para técnico:", tecnico.value);
-            //     await setDoc(docUT, {
-            //         IDUsuario: doc(db, "USUARIO", tecnico.value),
-            //         IDTarea: doc(db, "TAREA", nuevoNumero.toString()),
-            //     });
-            // }
-
-            // const contadorUTRef = doc(db, "contador", "usuario_tarea");
-            // await updateDoc(contadorUTRef, { cantidad: contadorUsuario_Tarea });
-
-            // Alert.alert("Éxito", "Tarea creada correctamente");
-
+            setImagenes([]);
             setNombre("");
             setDescripcion("");
             setValuePrioridad(null);
@@ -166,10 +240,18 @@ const RegistrarTareasGestor = ({ navigation }) => {
             setArrayValueTecnicos([]);
             setValueTecnicos(null);
 
-            Alert.alert("Éxito", "Tarea creada correctamente");
+            Toast.show({
+                type: 'success',
+                text1: 'Éxito',
+                text2: 'Tarea creada correctamente',
+            });
         } catch (error) {
             console.error("Error creando tarea:", error);
-            Alert.alert("Error", "No se pudo crear la tarea");
+            Toast.show({
+                type: 'error',
+                text1: 'Error',
+                text2: 'No se pudo crear la tarea',
+            });
         } finally {
             setLoading(false);
         }
@@ -288,6 +370,8 @@ const RegistrarTareasGestor = ({ navigation }) => {
         setOpenPrioridad(false);
     };
 
+    const [heights, setHeights] = useState([]);
+
     return (
         <View style={{ flex: 1 }}>
             <LinearGradient
@@ -301,13 +385,13 @@ const RegistrarTareasGestor = ({ navigation }) => {
                 <View style={{ paddingTop: 40, paddingLeft: 10 }}>
                     <View style={{ flexDirection: "row", alignItems: "center" }}>
                         <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 4 }}>
-                            <Ionicons name="chevron-back" size={24} color={profile.modoOscuro === true ? "#FFFF" : "black"} />
+                            <Ionicons name="chevron-back" size={24} color={profile.modoOscuro === true ? "black" :  "#FFFF"} />
                         </TouchableOpacity>
                     </View>
 
                     <Text
                         style={{
-                            color: profile.modoOscuro ? "white" : "#2C2C2C",
+                            color: profile.modoOscuro ? "#2C2C2C" :  "white",
                             fontSize: 26,
                             fontWeight: "900",
                             marginTop: 5,
@@ -318,24 +402,24 @@ const RegistrarTareasGestor = ({ navigation }) => {
                     </Text>
                 </View>
             </LinearGradient>
-            <View style={profile.modoOscuro === true ? styles.containerClaro : styles.containerOscuro}>
+            <View style={profile.modoOscuro === true ? styles.containerOscuro : styles.containerClaro}>
                 <ScrollView style={{ paddingHorizontal: 15, borderTopRightRadius: 35, borderTopLeftRadius: 35, paddingBottom: 0 }} nestedScrollEnabled={true}>
                     <View>
-                        <Text style={[styles.titulo, { paddingTop: 20 }, { color: profile.modoOscuro === true ? 'black' : "white" }]}>Datos de la Tarea</Text>
+                        <Text style={[styles.titulo, { paddingTop: 20 }, { color: profile.modoOscuro === true ? "white" : 'black' }]}>Datos de la Tarea</Text>
                         <View style={styles.containerInputs}>
-                            <Text style={profile.modoOscuro === true ? styles.labelClaro : styles.labelOscuro}>Nombre</Text>
+                            <Text style={profile.modoOscuro === true ? styles.labelOscuro : styles.labelClaro}>Nombre</Text>
                             <TextInput style={profile.modoOscuro === true ? styles.inputClaro : styles.inputOscuro}
                                 placeholder='Escribe el nombre'
-                                placeholderTextColor={"#606368"}
+                                placeholderTextColor={profile.modoOscuro ? "#D1D1D1" : "black"}
                                 value={nombre}
                                 onChangeText={setNombre}
                             />
                         </View>
                         <View style={styles.containerInputs}>
-                            <Text style={profile.modoOscuro === true ? styles.labelClaro : styles.labelOscuro}>Descripción</Text>
-                            <TextInput style={[profile.modoOscuro === true ? styles.inputClaro : styles.inputOscuro, styles.descripcion]}
+                            <Text style={profile.modoOscuro === true ? styles.labelOscuro :  styles.labelClaro}>Descripción</Text>
+                            <TextInput style={[profile.modoOscuro === true ? styles.inputOscuro : styles.inputClaro, styles.descripcion]}
                                 placeholder='Escribe la descripción'
-                                placeholderTextColor={"#606368"}
+                                placeholderTextColor={profile.modoOscuro ? "#D1D1D1" : "black"}
                                 multiline={true}
                                 textAlignVertical="top"
                                 value={descripcion}
@@ -343,7 +427,70 @@ const RegistrarTareasGestor = ({ navigation }) => {
                             />
                         </View>
                         <View style={styles.containerInputs}>
-                            <Text style={profile.modoOscuro === true ? styles.labelClaro : styles.labelOscuro}>Prioridad</Text>
+                            <TouchableOpacity
+                                onPress={mostrarOpciones}
+                                style={{
+                                    backgroundColor: "#8BA7E6",
+                                    padding: 10,
+                                    flexDirection: "row",
+                                    gap: 4,
+                                    borderRadius: 8,
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                }}
+                            >
+                                <AntDesign
+                                    name="plus"
+                                    size={20}
+                                    color={profile.modoOscuro ? "black" :  "#FFF"}
+                                />
+                                <Text
+                                    style={{
+                                        fontWeight: "700",
+                                        fontSize: 16,
+                                        color: profile.modoOscuro ? "black" :  "#FFF",
+                                    }}
+                                >
+                                    Adjuntar imágenes
+                                </Text>
+                            </TouchableOpacity>
+
+                            {/* Mostrar imágenes seleccionadas */}
+                            <ScrollView
+                                horizontal
+                                showsHorizontalScrollIndicator={false}
+                                style={{ marginTop: 10 }}
+                            >
+                                {imagenes.map((uri, index) => (
+                                    <View key={index} style={styles.imageContainer}>
+                                        <TouchableOpacity
+                                            style={{
+                                                position: "absolute",
+                                                top: 5,
+                                                right: 5,
+                                                backgroundColor: "rgba(255,255,255,0.7)",
+                                                borderRadius: 50,
+                                                padding: 2,
+                                                zIndex: 60000,
+                                            }}
+                                            onPress={() => eliminarImagen(uri)}
+                                        >
+                                            <AntDesign name="close" size={18} color="red" />
+                                        </TouchableOpacity>
+                                        <Image
+                                            source={{ uri }}
+                                            style={{
+                                                width: 120,
+                                                height: 120,
+                                                borderRadius: 10,
+                                                marginRight: 8,
+                                            }} />
+                                    </View>
+                                ))}
+                            </ScrollView>
+                        </View>
+                        <View style={styles.containerInputs}>
+                            <Text style={profile.modoOscuro === true ? styles.labelOscuro : styles.labelClaro}>Prioridad</Text>
                             <DropDownPicker
                                 open={openPrioridad}
                                 value={valuePrioridad}
@@ -353,32 +500,32 @@ const RegistrarTareasGestor = ({ navigation }) => {
                                 setItems={setPrioridad}
                                 placeholder="Selecciona prioridad"
                                 style={[
-                                    profile.modoOscuro ? styles.inputClaro : styles.inputOscuro,
+                                    profile.modoOscuro ? styles.inputOscuro :  styles.inputClaro,
                                     styles.box
                                 ]}
                                 listMode="SCROLLVIEW"
                                 dropDownContainerStyle={{
                                     borderColor: "#F2F3F5",
                                     borderWidth: 2,
-                                    backgroundColor: profile.modoOscuro ? "white" : "#2C2C2C",
+                                    backgroundColor: profile.modoOscuro ? "#2C2C2C" : "white",
                                     borderRadius: 8,
                                 }}
                                 placeholderStyle={{
-                                    color: "#606368",
+                                    color: profile.modoOscuro ? "#D1D1D1" :  "black",
                                     fontSize: 16,
                                 }}
                                 textStyle={{
-                                    color: profile.modoOscuro ? "black" : "#D1D1D1",
+                                    color: profile.modoOscuro ? "#D1D1D1" :  "black",
                                     fontSize: 16,
                                 }}
                                 zIndex={1000}
                                 zIndexInverse={3000}
                                 ArrowDownIconComponent={() => (
-                                    <MaterialIcons name="keyboard-arrow-down" size={24} color={profile.modoOscuro ? "black" : "white"} />
+                                    <MaterialIcons name="keyboard-arrow-down" size={24} color={profile.modoOscuro ? "white" : "black"} />
 
                                 )}
                                 ArrowUpIconComponent={() => (
-                                    <MaterialIcons name="keyboard-arrow-down" size={24} color={profile.modoOscuro ? "black" : "white"} />
+                                    <MaterialIcons name="keyboard-arrow-down" size={24} color={profile.modoOscuro ? "white" : "black"} />
 
                                 )}
                                 onOpen={handleOpenPrioridad}
@@ -386,8 +533,8 @@ const RegistrarTareasGestor = ({ navigation }) => {
                         </View>
 
                         <View style={styles.containerInputs}>
-                            <Text style={profile.modoOscuro === true ? styles.labelClaro : styles.labelOscuro}>Fecha de entrega</Text>
-                            <TouchableOpacity onPress={() => setIsVisible(true)} style={profile.modoOscuro === true ? styles.inputClaro : styles.inputOscuro}>
+                            <Text style={profile.modoOscuro === true ? styles.labelOscuro :  styles.labelClaro}>Fecha de entrega</Text>
+                            <TouchableOpacity onPress={() => setIsVisible(true)} style={profile.modoOscuro === true ? styles.inputOscuro : styles.inputClaro}>
                                 <View style={{
                                     flexDirection: "row",
                                     justifyContent: "space-between",
@@ -396,17 +543,17 @@ const RegistrarTareasGestor = ({ navigation }) => {
                                     <View>
                                         {
                                             selectedDate ?
-                                                <Text style={{ fontSize: 16, color: profile.modoOscuro ? "black" : "#D1D1D1", }}>
+                                                <Text style={{ fontSize: 16, color: profile.modoOscuro ? "#D1D1D1" : "black", }}>
                                                     {selectedDate ? selectedDate.toLocaleString() : "Selecciona fecha y hora"}
                                                 </Text>
                                                 :
-                                                <Text style={{ fontSize: 16, color: selectedDate ? "#000" : "#606368" }}>
+                                                <Text style={{ fontSize: 16, color: selectedDate ? "#000" : "#D1D1D1" }}>
                                                     {selectedDate ? selectedDate.toLocaleString() : "Selecciona fecha y hora"}
                                                 </Text>
                                         }
                                     </View>
                                     <View style={{ marginRight: 10 }}>
-                                        <Fontisto name="date" size={20} color={profile.modoOscuro === true ? "black" : "#FFFF"} />
+                                        <Fontisto name="date" size={20} color={profile.modoOscuro === true ? "#FFFF" : "black"} />
                                     </View>
                                 </View>
                             </TouchableOpacity>
@@ -417,14 +564,14 @@ const RegistrarTareasGestor = ({ navigation }) => {
                                 onConfirm={handleConfirm}
                                 onCancel={() => setIsVisible(false)}
                                 minimumDate={new Date()}
-                                style={profile.modoOscuro === true ? styles.inputClaro : styles.inputOscuro}
+                                style={profile.modoOscuro === true ? styles.inputOscuro : styles.inputClaro}
                                 zIndex={500}
                                 zIndexInverse={1500}
                             />
                         </View>
 
                         <View style={styles.containerInputs}>
-                            <Text style={profile.modoOscuro === true ? styles.labelClaro : styles.labelOscuro}>Sucursal</Text>
+                            <Text style={profile.modoOscuro === true ? styles.labelOscuro : styles.labelClaro}>Sucursal</Text>
                             <DropDownPicker
                                 open={openSucursal}
                                 value={valueSucursal}
@@ -433,30 +580,30 @@ const RegistrarTareasGestor = ({ navigation }) => {
                                 setValue={setValueSucursal}
                                 setItems={setSucursal}
                                 placeholder="Selecciona sucursal"
-                                style={profile.modoOscuro === true ? styles.inputClaro : styles.inputOscuro}
+                                style={profile.modoOscuro === true ? styles.inputOscuro : styles.inputClaro}
                                 listMode="SCROLLVIEW"
                                 dropDownContainerStyle={{
                                     borderColor: "#F2F3F5",
                                     borderWidth: 2,
-                                    backgroundColor: profile.modoOscuro ? "white" : "#2C2C2C",
+                                    backgroundColor: profile.modoOscuro ? "#2C2C2C" : "white",
                                     borderRadius: 8,
                                 }}
                                 placeholderStyle={{
-                                    color: "#606368",
+                                    color: profile.modoOscuro ? "#D1D1D1" : "black",
                                     fontSize: 16,
                                 }}
                                 textStyle={{
-                                    color: profile.modoOscuro ? "black" : "#D1D1D1",
+                                    color: profile.modoOscuro ? "#D1D1D1" : "black",
                                     fontSize: 16,
                                 }}
                                 zIndex={100}
                                 zIndexInverse={100}
                                 ArrowDownIconComponent={() => (
-                                    <MaterialIcons name="keyboard-arrow-down" size={24} color={profile.modoOscuro ? "black" : "white"} />
+                                    <MaterialIcons name="keyboard-arrow-down" size={24} color={profile.modoOscuro ? "white" :  "black"} />
 
                                 )}
                                 ArrowUpIconComponent={() => (
-                                    <MaterialIcons name="keyboard-arrow-down" size={24} color={profile.modoOscuro ? "black" : "white"} />
+                                    <MaterialIcons name="keyboard-arrow-down" size={24} color={profile.modoOscuro ? "white" :  "black"}  />
 
                                 )}
                                 onOpen={handleOpenSucursal}
@@ -464,10 +611,10 @@ const RegistrarTareasGestor = ({ navigation }) => {
                         </View>
                     </View>
                     <View style={{ marginTop: 20 }}>
-                        <Text style={[styles.titulo, { color: profile.modoOscuro === true ? 'black' : "white" }]}>Asignación de la Tarea</Text>
+                        <Text style={[styles.titulo, { color: profile.modoOscuro === true ? "white" : 'black' }]}>Asignación de la Tarea</Text>
                         <View style={{ flexDirection: "row" }}>
                             <View style={{ flex: 1 }}>
-                                <Text style={[profile.modoOscuro === true ? styles.labelClaro : styles.labelOscuro, { zIndex: 20 }]}>Asignación</Text>
+                                <Text style={[profile.modoOscuro === true ? styles.labelOscuro :  styles.labelClaro, { zIndex: 20 }]}>Asignación</Text>
                                 <DropDownPicker
                                     open={openTecnicos}
                                     value={valueTecnicos}
@@ -475,7 +622,7 @@ const RegistrarTareasGestor = ({ navigation }) => {
                                     setOpen={setOpenTecnicos}
                                     setValue={setValueTecnicos}
                                     placeholder="Selecciona técnico"
-                                    style={[profile.modoOscuro === true ? styles.inputClaro : styles.inputOscuro, styles.inputTecnicos]}
+                                    style={[profile.modoOscuro === true ? styles.inputOscuro : styles.inputClaro, styles.inputTecnicos]}
                                     listMode="SCROLLVIEW"
                                     searchable={true}
                                     searchPlaceholder="Buscar técnico"
@@ -491,30 +638,30 @@ const RegistrarTareasGestor = ({ navigation }) => {
                                     dropDownContainerStyle={{
                                         borderColor: "#F2F3F5",
                                         borderWidth: 2,
-                                        backgroundColor: profile.modoOscuro ? "white" : "#2C2C2C",
+                                        backgroundColor: profile.modoOscuro ? "#2C2C2C" :  "white",
                                         borderRadius: 8,
                                     }}
                                     placeholderStyle={{
-                                        color: "#606368",
+                                        color: profile.modoOscuro ? "#D1D1D1" :  "black",
                                         fontSize: 16,
                                     }}
                                     textStyle={{
-                                        color: profile.modoOscuro ? "black" : "#D1D1D1",
+                                        color: profile.modoOscuro ? "#D1D1D1" :  "black",
                                         fontSize: 16,
                                     }}
                                     ArrowDownIconComponent={() => (
-                                        <MaterialIcons name="keyboard-arrow-down" size={24} color={profile.modoOscuro ? "black" : "white"} />
+                                        <MaterialIcons name="keyboard-arrow-down" size={24} color={profile.modoOscuro ? "white" :  "black"} />
 
                                     )}
                                     ArrowUpIconComponent={() => (
-                                        <MaterialIcons name="keyboard-arrow-down" size={24} color={profile.modoOscuro ? "black" : "white"} />
+                                        <MaterialIcons name="keyboard-arrow-down" size={24} color={profile.modoOscuro ? "white" :  "black"} />
 
                                     )}
                                     onOpen={handleOpenTecnicos}
                                 />
                             </View>
                             <View style={{ marginTop: 15 }}>
-                                <TouchableOpacity style={styles.masTecnicos} onPress={acomodarArrayConTecnicos}><AntDesign name="plus" size={20} color={profile.modoOscuro === true ? "#FFFF" : "black"} /></TouchableOpacity>
+                                <TouchableOpacity style={styles.masTecnicos} onPress={acomodarArrayConTecnicos}><AntDesign name="plus" size={20} color={profile.modoOscuro === true ? "black"  : "#FFFF"} /></TouchableOpacity>
                             </View>
                         </View>
                         <View>
@@ -537,7 +684,7 @@ const RegistrarTareasGestor = ({ navigation }) => {
                                             source={{ uri: tecnico.fotoPerfil }}
                                         />
                                         <View style={{ justifyContent: "center", paddingLeft: 10 }}>
-                                            <Text style={{ color: profile.modoOscuro ? "white" : "black", fontWeight: "500", fontSize: 16 }}>
+                                            <Text style={{ color: profile.modoOscuro ? "black" :  "white", fontWeight: "500", fontSize: 16 }}>
                                                 {`${tecnico.primerNombre} ${tecnico.segundoNombre} ${tecnico.primerApellido} ${tecnico.segundoApellido}`}
                                             </Text>
                                         </View>
@@ -560,7 +707,7 @@ const RegistrarTareasGestor = ({ navigation }) => {
                                             borderBottomRightRadius: 8,
                                         }}
                                     >
-                                        <AntDesign name="close" size={20} color={profile.modoOscuro === true ? "#FFFF" : "black"} />
+                                        <AntDesign name="close" size={20} color={profile.modoOscuro === true ? "black" :  "#FFFF"} />
                                     </TouchableOpacity>
                                 </View>
                             ))}
@@ -570,7 +717,7 @@ const RegistrarTareasGestor = ({ navigation }) => {
                                 style={[styles.botonSumit, loading && { opacity: 0.1 }]}
                                 onPress={saveTareas}
                             >
-                                <Text style={profile.modoOscuro === true ? { color: 'white', fontWeight: 800, fontSize: 20 } : { color: "black", fontWeight: 800, fontSize: 20 }}>Crear Tarea</Text>
+                                <Text style={profile.modoOscuro === true ? { color: "black", fontWeight: 800, fontSize: 20 } : { color: 'white', fontWeight: 800, fontSize: 20 }}>Crear Tarea</Text>
                             </TouchableOpacity>
                         </View>
                     </View>

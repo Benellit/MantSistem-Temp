@@ -243,7 +243,7 @@ export default function SucursalesAdmin({ navigation }) {
                   ]}
                 >
 
-                    
+
                   {/* Título + chip creador + chevron */}
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <Ionicons name="business" size={48} color={C.iconAccent} />
@@ -251,12 +251,12 @@ export default function SucursalesAdmin({ navigation }) {
                       profile.modoOscuro ? styles.tituloCardOscuro : styles.tituloCardClaro,
                       { color: C.title }
                     ]}>
-                        
+
                       {s.nombre || `Sucursal ${s.id.slice(0, 6)}`}
                     </Text>
 
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                      
+
                       <Ionicons name="chevron-forward" size={20} color={profile.modoOscuro ? "#A1A6AD" : "#6B7280"} />
                     </View>
                   </View>
@@ -304,7 +304,7 @@ export default function SucursalesAdmin({ navigation }) {
                       <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
                         <Ionicons name="business" size={18} color={C.iconAccent} />
                         <Text style={{ fontSize: 14, fontWeight: '500', color: C.info }}>
-                          
+
                         </Text>
                       </View>
                     </View>
@@ -325,12 +325,10 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-
-  /* Header como Tareas */
   headerClaro: {
-    paddingTop: 16,
+    paddingTop: 15,
     paddingHorizontal: 15,
-    paddingBottom: 8,
+    paddingBottom: 5,
     backgroundColor: "white",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
@@ -338,13 +336,12 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 16,
     borderBottomWidth: 1,
-    borderColor: "#D9D9D9",
-    marginBottom: 6,
+    borderColor: "#D9D9D9"
   },
   headerOscuro: {
-    paddingTop: 16,
+    paddingTop: 15,
     paddingHorizontal: 15,
-    paddingBottom: 8,
+    paddingBottom: 5,
     backgroundColor: "#2C2C2C",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
@@ -352,36 +349,33 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 16,
     borderBottomWidth: 1,
-    borderColor: "rgba(255,255,255,0.12)",
-    marginBottom: 6,
+    borderColor: "#D9D9D9"
   },
   tituloClaro: {
     color: "black",
     fontSize: 26,
     fontWeight: 900,
-    marginTop: 16,
-    marginBottom: 4,
+    marginTop: 10,
   },
   tituloOscuro: {
     color: "white",
     fontSize: 26,
     fontWeight: 900,
-    marginTop: 16,
-    marginBottom: 4,
+    marginTop: 10,
   },
   inputBusqueda: {
     paddingLeft: 15,
     borderRadius: 20,
+    borderColor: "#D9D9D9",
     borderWidth: 1,
     fontSize: 16,
     paddingBottom: 7,
-    paddingTop: 7,
-    backgroundColor: "transparent",
+    paddingTop: 7.
   },
   opciones: {
     padding: 7,
     borderRadius: 9,
-    backgroundColor: "#87aef0",
+    backgroundColor: "#87aef0"
   },
 
   /* Estados de carga / vacío */

@@ -66,13 +66,13 @@ const EditTarea = ({ route, navigation }) => {
                 <View style={{ paddingTop: 40, paddingLeft: 10 }}>
                     <View style={{ flexDirection: "row", alignItems: "center" }}>
                         <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 4 }}>
-                            <Ionicons name="chevron-back" size={24} color={profile.modoOscuro === true ? "#FFFF" : "black"} />
+                            <Ionicons name="chevron-back" size={24} color={profile.modoOscuro === true ? "black" : "#FFFF"} />
                         </TouchableOpacity>
                     </View>
 
                     <Text
                         style={{
-                            color: profile.modoOscuro ? "white" : "#2C2C2C",
+                            color: profile.modoOscuro ? "#2C2C2C" :  "white",
                             fontSize: 26,
                             fontWeight: "900",
                             marginTop: 5,
@@ -83,7 +83,7 @@ const EditTarea = ({ route, navigation }) => {
                     </Text>
                 </View>
             </LinearGradient>
-            <View style={profile.modoOscuro === true ? styles.containerClaro : styles.containerOscuro}>
+            <View style={profile.modoOscuro === true ? styles.containerOscuro : styles.containerClaro}>
 
 
                 <ScrollView style={{ paddingHorizontal: 15, borderTopRightRadius: 35, borderTopLeftRadius: 35, paddingBottom: 0 }} nestedScrollEnabled={true}>
@@ -92,7 +92,7 @@ const EditTarea = ({ route, navigation }) => {
                         <TouchableOpacity
                             style={[styles.botonSumit]}
                         >
-                            <Text style={profile.modoOscuro === true ? { color: 'white', fontWeight: 800, fontSize: 20 } : { color: "black", fontWeight: 800, fontSize: 20 }}>Aplicar Cambios</Text>
+                            <Text style={profile.modoOscuro === true ? { color: "black", fontWeight: 800, fontSize: 20 } : { color: 'white', fontWeight: 800, fontSize: 20 }}>Aplicar Cambios</Text>
                         </TouchableOpacity>
                     </View>
                 </ScrollView>

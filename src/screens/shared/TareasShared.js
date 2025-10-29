@@ -5,13 +5,12 @@ import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { LinearGradient } from "expo-linear-gradient";
 import { collection, collectionGroup, doc, getDoc, getDocs, getFirestore, orderBy, query, where } from "firebase/firestore";
-import React, { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { Dimensions, Image, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import ModalFiltrosAdmin from '../../components/admin/ModalFiltrosAdmin';
+import ModalFiltros from '../../components/ModalFiltros';
 import BotonRegistrar from '../../components/BotonRegistrar';
 import appFirebase from '../../credenciales/Credenciales';
 import { useAuth } from "../login/AuthContext";
-import { useFocusEffect } from '@react-navigation/native';
 
 export default function TareasShared({ navigation }) {
     const db = getFirestore(appFirebase);
@@ -21,6 +20,11 @@ export default function TareasShared({ navigation }) {
     const [tareas, setTareas] = useState([]);
     const [busqueda, setBusqueda] = useState("");
     const [openFiltros, setOpenFiltros] = useState(false);
+    const [filtros, setFiltros] = useState({
+        sucursal: null,
+        prioridad: null,
+        estado: null,
+    });
 
     const onRefresh = () => {
         setRefreshing(true);
@@ -30,50 +34,62 @@ export default function TareasShared({ navigation }) {
         }, 1000);
     };
 
-    useEffect(() => {
-        console.log("TareasShared montado");
-        return () => console.log("TareasShared desmontado");
-    }, []);
-
     // Conseguir TAREAS
     useEffect(() => {
         getTareas();
-    }, []);
+    }, [busqueda, filtros]);
 
     const getTareas = async () => {
         try {
             let tareaList = [];
 
-            // Obtener tareas según el rol
+            // ----------- ADMINISTRADOR -----------
             if (profile.rol === "Administrador") {
-                const baseQuery = busqueda
-                    ? query(
-                        collection(db, "TAREA"),
-                        orderBy("fechaCreacion", "desc"),
-                        where("nombre", ">=", busqueda),
-                        where("nombre", "<=", busqueda + '\uf8ff')
-                    )
-                    : query(collection(db, "TAREA"), orderBy("fechaCreacion", "desc"));
+                const constraints = [orderBy("fechaCreacion", "desc")];
+
+                // Filtro por búsqueda (nombre)
+                if (busqueda) {
+                    constraints.push(where("nombre", ">=", busqueda));
+                    constraints.push(where("nombre", "<=", busqueda + "\uf8ff"));
+                }
+
+                // Filtros del modal
+                if (filtros.sucursal) {
+                    const sucursalRef = doc(db, "SUCURSAL", filtros.sucursal);
+                    constraints.push(where("IDSucursal", "==", sucursalRef));
+                }
+                if (filtros.prioridad) constraints.push(where("prioridad", "==", filtros.prioridad));
+                if (filtros.estado) constraints.push(where("estado", "==", filtros.estado));
+
+                const baseQuery = query(collection(db, "TAREA"), ...constraints);
                 const response = await getDocs(baseQuery);
                 tareaList = response.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
+                // ----------- GESTOR -----------
             } else if (profile.rol === "Gestor") {
-                const baseQuery = busqueda
-                    ? query(
-                        collection(db, "TAREA"),
-                        where("IDSucursal", "==", profile.IDSucursal),
-                        where("nombre", ">=", busqueda),
-                        where("nombre", "<=", busqueda + '\uf8ff'),
-                        orderBy("fechaCreacion", "desc")
+                const constraints = [
+                    orderBy("fechaCreacion", "desc"),
+                    where("IDSucursal", "==", profile.IDSucursal.referencePath
+                        ? doc(db, profile.IDSucursal.referencePath.split("/")[0], profile.IDSucursal.referencePath.split("/")[1])
+                        : profile.IDSucursal
                     )
-                    : query(
-                        collection(db, "TAREA"),
-                        where("IDSucursal", "==", profile.IDSucursal),
-                        orderBy("fechaCreacion", "desc")
-                    );
+                ];
+
+                // Filtro por búsqueda (nombre)
+                if (busqueda) {
+                    constraints.push(where("nombre", ">=", busqueda));
+                    constraints.push(where("nombre", "<=", busqueda + "\uf8ff"));
+                }
+
+                // Filtros del modal
+                if (filtros.prioridad) constraints.push(where("prioridad", "==", filtros.prioridad));
+                if (filtros.estado) constraints.push(where("estado", "==", filtros.estado));
+
+                const baseQuery = query(collection(db, "TAREA"), ...constraints);
                 const response = await getDocs(baseQuery);
                 tareaList = response.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
+                // ----------- TÉCNICO -----------
             } else if (profile.rol === "Tecnico") {
                 const userRef = doc(db, "USUARIO", profile.id);
                 const q = query(collectionGroup(db, "Tecnicos"), where("IDUsuario", "==", userRef));
@@ -84,24 +100,38 @@ export default function TareasShared({ navigation }) {
                         const tecnicoData = docSnap.data();
                         const tareaRef = docSnap.ref.parent.parent;
                         const tareaSnap = await getDoc(tareaRef);
+                        const tareaData = { id: tareaRef.id, ...tareaSnap.data(), tecnico: { id: docSnap.id, ...tecnicoData } };
 
-                        return {
-                            id: tareaRef.id,
-                            ...tareaSnap.data(),
-                            tecnico: { id: docSnap.id, ...tecnicoData },
-                        };
+                        // --------- Aplicar filtros del modal ----------
+                        if (filtros.estado && tareaData.estado !== filtros.estado) return null;
+                        if (filtros.prioridad && tareaData.prioridad !== filtros.prioridad) return null;
+                        // Sucursal siempre es la del técnico, si quieres se puede comparar:
+                        if (filtros.sucursal) {
+                            const sucursalId = tareaData.IDSucursal.id || tareaData.IDSucursal;
+                            if (sucursalId !== filtros.sucursal) return null;
+                        }
+
+                        // Filtro por búsqueda
+                        if (busqueda && !tareaData.nombre.toLowerCase().includes(busqueda.toLowerCase())) return null;
+
+                        return tareaData;
                     })
                 );
+
+                // Eliminar las tareas que no pasaron los filtros
+                tareaList = tareaList.filter(t => t !== null);
+
             } else {
                 navigation.navigate("Tabs");
                 return;
             }
 
+            // ----------- ENRIQUECER TAREAS -----------
             const tareasConTodo = await Promise.all(
                 tareaList.map(async (tarea) => {
                     const tareaRef = doc(db, "TAREA", tarea.id);
 
-                    // --- Cargar Técnicos ---
+                    // Técnicos
                     const tecnicosSnap = await getDocs(collection(tareaRef, "Tecnicos"));
                     const tecnicos = await Promise.all(
                         tecnicosSnap.docs.map(async (t) => {
@@ -119,17 +149,24 @@ export default function TareasShared({ navigation }) {
                         })
                     );
 
-                    // --- Cargar Reportes y Evidencias ---
+                    // Reportes y Evidencias
                     const [repSnap, eviSnap] = await Promise.all([
                         getDocs(collection(tareaRef, "Reportes")),
-                        getDocs(collection(tareaRef, "Evidencias"))
+                        getDocs(collection(tareaRef, "Evidencias")),
                     ]);
+
+                    let totalFotos = 0;
+                    eviSnap.forEach(doc => {
+                        const data = doc.data();
+                        if (Array.isArray(data.fotografias)) totalFotos += data.fotografias.length;
+                    });
 
                     return {
                         ...tarea,
                         tecnicos,
                         totalReportes: repSnap.size,
-                        totalEvidencias: eviSnap.size
+                        totalEvidencias: eviSnap.size,
+                        totalFotografias: totalFotos,
                     };
                 })
             );
@@ -141,6 +178,7 @@ export default function TareasShared({ navigation }) {
             console.error("Error consiguiendo las Tareas:", error);
         }
     };
+
 
     const formatFecha = (fecha) => {
         if (!fecha) return "";
@@ -172,67 +210,67 @@ export default function TareasShared({ navigation }) {
 
     //Funcion para cambiar de color la estado de la TAREA
     const getEstadoStyle = (estado) => {
-        if (!estado) return { backgroundColor: '#9E9E9E', color: profile.modoOscuro === true ? "#EDEDED" : "black", };
+        if (!estado) return { backgroundColor: '#9E9E9E', color: profile.modoOscuro === true ? "black" : "#EDEDED", };
         const status = estado;
 
         if (status === 'Completada') {
             return {
                 backgroundColor: '#47A997',
-                color: profile.modoOscuro === true ? "white" : "black",
+                color: profile.modoOscuro === true ? "black" : "white",
             };
         } else if (status === 'Revisada') {
             return {
                 backgroundColor: '#B383E2',
-                color: profile.modoOscuro === true ? "white" : "black",
+                color: profile.modoOscuro === true ? "black" : "white",
             };
         } else if (status === "Pendiente") {
             return {
                 backgroundColor: '#F4C54C',
-                color: profile.modoOscuro === true ? "white" : "black",
+                color: profile.modoOscuro === true ? "black" : "white",
             };
         } else if (status === "En Proceso") {
             return {
                 backgroundColor: '#57A7FE',
-                color: profile.modoOscuro === true ? "white" : "black",
+                color: profile.modoOscuro === true ? "black" : "white",
             };
         } else if (status === "No Entregada") {
             return {
                 backgroundColor: '#F5615C',
-                color: profile.modoOscuro === true ? "white" : "black",
+                color: profile.modoOscuro === true ? "black" : "white",
             };
         }
 
         return {
             backgroundColor: '#9E9E9E',
-            color: profile.modoOscuro === true ? "white" : "black",
+            color: profile.modoOscuro === true ? "black" : "white",
         };
     };
 
     //Funcion para cambiar de color la prioridad de la TAREA
     const getPrioridadStyle = (prioridad) => {
-        if (!prioridad) return { backgroundColor: '#9E9E9E', color: profile.modoOscuro === true ? "#EDEDED" : "black", };
+        if (!prioridad) return { backgroundColor: '#9E9E9E', color: profile.modoOscuro === true ? "black" : "#EDEDED", };
         const status = prioridad;
 
         if (status === 'Alta') {
             return {
                 backgroundColor: '#F5615C',
-                color: profile.modoOscuro === true ? "white" : "black",
+                color: profile.modoOscuro === true ? "black" : "white",
             };
         } else if (status === 'Media') {
             return {
                 backgroundColor: '#F5C44C',
-                color: profile.modoOscuro === true ? "white" : "black",
+                color: profile.modoOscuro === true ? "black" : "white",
             };
         } else if (status === "Baja") {
             return {
                 backgroundColor: '#57A6FF',
-                color: profile.modoOscuro === true ? "white" : "black",
+                color: profile.modoOscuro === true ? "black" : "white",
             };
         }
 
         return {
             backgroundColor: '#9E9E9E',
-            color: profile.modoOscuro === true ? "white" : "black",
+            color: profile.modoOscuro === true ? "black" : "white",
         };
     };
 
@@ -259,16 +297,16 @@ export default function TareasShared({ navigation }) {
         >
             <View style={{ flex: 1 }}>
                 {/* Header */}
-                <View style={profile.modoOscuro ? styles.headerOscuro : styles.headerClaro}>
+                <View style={profile.modoOscuro === true ? styles.headerOscuro : styles.headerClaro}>
                     <View>
-                        <Text style={profile.modoOscuro ? styles.tituloOscuro : styles.tituloClaro}>Tareas</Text>
+                        <Text style={profile.modoOscuro === true ? styles.tituloOscuro : styles.tituloClaro }>Tareas</Text>
                     </View>
                     <View style={{ flexDirection: "row", gap: 10, marginBottom: 5 }}>
                         <View style={{ marginBottom: 0, marginVertical: 5, flex: 1 }}>
                             <TextInput
                                 placeholder="Buscar"
-                                placeholderTextColor={profile.modoOscuro ? "#BDBDBD" : "#6B7280"}
-                                style={[styles.inputBusqueda, { color: profile.modoOscuro ? "#FFFFFF" : "#111827" }]}
+                                placeholderTextColor={profile.modoOscuro === true ? "#FFFF" : "black"}
+                                style={styles.inputBusqueda}
                                 value={busqueda}
                                 onChangeText={setBusqueda}
                             />
@@ -287,41 +325,21 @@ export default function TareasShared({ navigation }) {
                                         opacity: refreshing ? 0.5 : 1,
                                     }}
                                 >
-                                    <EvilIcons name="close" size={24} color={profile.modoOscuro ? "#FFFFFF" : "#111827"} />
-
+                                    <EvilIcons name="close" size={24} color={profile.modoOscuro === true ? "#FFFF" : "black"} />
                                 </TouchableOpacity>
                             )}
 
 
                             <TouchableOpacity refreshing={refreshing} onPress={onRefresh} style={{ position: "absolute", right: 0, top: 0, backgroundColor: "#87aef0", padding: 10, borderTopRightRadius: 20, borderBottomRightRadius: 20 }}>
-                                <FontAwesome6 name="magnifying-glass" size={16} color={profile.modoOscuro === true ? "#FFFF" : "black"} />
+                                <FontAwesome6 name="magnifying-glass" size={16} color={profile.modoOscuro === true ? "black" : "#FFFF"} />
                             </TouchableOpacity>
                         </View>
                         <View style={{ marginTop: 5, justifyContent: "center", alignContent: "center" }}>
                             <TouchableOpacity style={styles.opciones} onPress={() => { setOpenFiltros(true) }}>
-                                <Ionicons name="options-outline" size={24} color={profile.modoOscuro === true ? "#FFFF" : "black"} />
+                                <Ionicons name="options-outline" size={24} color={profile.modoOscuro === true ? "black" : "#FFFF"} />
                             </TouchableOpacity>
                         </View>
                     </View>
-                    {/* <View>
-                        <ScrollView horizontal={true} style={{}} showsHorizontalScrollIndicator={false}>
-                            <TouchableOpacity>
-                                <Text style={styles.item}>Todas</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity>
-                                <Text style={styles.item}>Normales</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity>
-                                <Text style={styles.item}>Repetitivas</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity>
-                                <Text style={styles.item}>Jerarquicas</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity>
-                                <Text style={styles.item}>Archivadas</Text>
-                            </TouchableOpacity>
-                        </ScrollView>
-                    </View> */}
                 </View>
 
                 <ScrollView
@@ -340,10 +358,9 @@ export default function TareasShared({ navigation }) {
                             onPress={() => navegarMas(tarea.id)}
                             key={tarea.id}
                             style={profile.modoOscuro ? styles.cardsTareasOscuro : styles.cardsTareasClaro}
-
                         >
                             <View>
-                                <Text style={profile.modoOscuro ? styles.tituloCardOscuro : styles.tituloCardClaro}>
+                                <Text style={profile.modoOscuro ? styles.tituloCardOscuro :  styles.tituloCardClaro}>
                                     {tarea.nombre}
                                 </Text>
 
@@ -374,18 +391,16 @@ export default function TareasShared({ navigation }) {
                                     </View>
 
                                     {/* 📸 Reportes y evidencias */}
-                                    <View style={{ flexDirection: 'row', gap: 8, marginTop: 6 }}>
-                                        <View style={{ flexDirection: "row", gap: 3 }}>
-                                    <Feather name="camera" size={16} color={profile.modoOscuro ? "#EDEDED" : "#353335"} />
+                                    <View style={{ flexDirection: 'row', gap: 10 }}>
+                                        <View style={{ flexDirection: "row", gap: 6 }}>
+                                            <Feather name="camera" size={18} color={profile.modoOscuro ?  "#EDEDED" : "#353335"} />
                                             <Text style={profile.modoOscuro ? styles.numerosOscuro : styles.numerosClaro}>
-
-                                                {tarea.totalEvidencias}
+                                                {tarea.totalFotografias}
                                             </Text>
                                         </View>
-                                        <View style={{ flexDirection: "row", gap: 3 }}>
-                                    <AntDesign name="book" size={16} color={profile.modoOscuro ? "#EDEDED" : "#353335"} />
+                                        <View style={{ flexDirection: "row", gap: 6 }}>
+                                            <AntDesign name="book" size={18} color={profile.modoOscuro ? "#EDEDED" :  "#353335"} />
                                             <Text style={profile.modoOscuro ? styles.numerosOscuro : styles.numerosClaro}>
-
                                                 {tarea.totalReportes}
                                             </Text>
                                         </View>
@@ -395,10 +410,8 @@ export default function TareasShared({ navigation }) {
                                 {/* 👨‍🔧 Técnicos */}
                                 <View style={{ flexDirection: "row", justifyContent: "space-between", alignContent: "center" }}>
                                     <View style={{ flexDirection: "row", gap: 7 }}>
-                                        <Feather name="calendar" size={20} color={profile.modoOscuro ? "#EDEDED" : "#7B7B7B"} />
-
+                                        <Feather name="calendar" size={20} color={profile.modoOscuro ?  "#EDEDED" : "#353335"} />
                                         <Text style={profile.modoOscuro ? styles.fechaOscuro : styles.fechaClaro}>
-
                                             {formatFecha(tarea.fechaCreacion)} - {formatFecha(tarea.fechaEntrega)}
                                         </Text>
                                     </View>
@@ -454,16 +467,18 @@ export default function TareasShared({ navigation }) {
 
                 {/* boton para registrar tareas NO PERMITIDO PARA TECNICOS */}
                 {profile.rol === "Tecnico" ? <View></View> : <BotonRegistrar />}
-
                 <>
                     {openFiltros ? (
-                        <ModalFiltrosAdmin open={openFiltros} setOpenFiltros={setOpenFiltros} />
+                        <ModalFiltros
+                            open={openFiltros}
+                            setOpenFiltros={setOpenFiltros}
+                            setFiltros={setFiltros}
+                            filtros={filtros}
+                        />
                     ) : (
                         <View />
                     )}
                 </>
-
-
             </View>
         </LinearGradient>
     );
@@ -474,9 +489,9 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     headerClaro: {
-        paddingTop: 16,
+        paddingTop: 15,
         paddingHorizontal: 15,
-        paddingBottom: 8,
+        paddingBottom: 5,
         backgroundColor: "white",
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 4 },
@@ -484,13 +499,12 @@ const styles = StyleSheet.create({
         shadowRadius: 5,
         elevation: 16,
         borderBottomWidth: 1,
-        borderColor: "#D9D9D9",
-        marginBottom: 6,
+        borderColor: "#D9D9D9"
     },
     headerOscuro: {
-        paddingTop: 16,
+        paddingTop: 15,
         paddingHorizontal: 15,
-        paddingBottom: 8,
+        paddingBottom: 5,
         backgroundColor: "#2C2C2C",
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 4 },
@@ -498,22 +512,19 @@ const styles = StyleSheet.create({
         shadowRadius: 5,
         elevation: 16,
         borderBottomWidth: 1,
-        borderColor: "rgba(255,255,255,0.12)",
-        marginBottom: 6,
+        borderColor: "#D9D9D9"
     },
     tituloClaro: {
         color: "black",
         fontSize: 26,
         fontWeight: 900,
-        marginTop: 16,
-        marginBottom: 4,
+        marginTop: 10,
     },
     tituloOscuro: {
         color: "white",
         fontSize: 26,
         fontWeight: 900,
-        marginTop: 16,
-        marginBottom: 4,
+        marginTop: 10,
     },
     inputBusqueda: {
         paddingLeft: 15,

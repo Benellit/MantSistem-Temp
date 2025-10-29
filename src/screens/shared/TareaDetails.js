@@ -6,9 +6,10 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import axios from "axios";
 import * as ImagePicker from "expo-image-picker";
-import { addDoc, collection, doc, getDoc, getDocs, getFirestore, query, setDoc, updateDoc, where } from "firebase/firestore";
+import { addDoc, collection, doc, getDoc, getDocs, getFirestore, query, setDoc, updateDoc, where, arrayRemove } from "firebase/firestore";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Animated, Dimensions, Image, Modal, PanResponder, ScrollView, StyleSheet, Text, TouchableOpacity, View, FlatList } from 'react-native';
+import { Alert, ActivityIndicator, Animated, Dimensions, FlatList, Image, Modal, PanResponder, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import Toast from 'react-native-toast-message';
 import appFirebase, { cloudinaryConfig } from '../../credenciales/Credenciales';
 import { useAuth } from "../login/AuthContext";
 
@@ -99,6 +100,12 @@ const TareaDetails = ({ route, navigation }) => {
                 console.log("✅ Imagen subida:", res.data.secure_url);
             }
 
+            Toast.show({
+                type: 'success',
+                text1: 'Éxito',
+                text2: 'Evidencia fotografica subida',
+            });
+
             setFoto(urls);
             await saveEvidencias(urls);
         } catch (err) {
@@ -106,6 +113,38 @@ const TareaDetails = ({ route, navigation }) => {
         }
     };
 
+    const eliminarEvidencia = (idTarea, idEvidenciaDoc, urlFoto) => {
+        Alert.alert(
+            "Eliminar imagen",
+            "¿Deseas eliminar esta imagen?",
+            [
+                { text: "Cancelar", style: "cancel" },
+                {
+                    text: "Eliminar",
+                    style: "destructive",
+                    onPress: async () => {
+                        try {
+                            console.log("Intentando eliminar...", { idTarea, idEvidenciaDoc, urlFoto });
+                            const evidenciaRef = doc(db, "TAREA", idTarea, "Evidencias", idEvidenciaDoc);
+                            await updateDoc(evidenciaRef, { fotografias: arrayRemove(urlFoto) });
+                            console.log("✅ Imagen eliminada correctamente");
+
+                            Toast.show({
+                                type: 'success',
+                                text1: 'Éxito',
+                                text2: 'Imagen eliminada correctamente',
+                            });
+
+                            // Refrescar datos
+                            await cargarDatos();
+                        } catch (error) {
+                            console.error("❌ Error al eliminar evidencia:", error);
+                        }
+                    },
+                },
+            ]
+        );
+    };
 
     const saveReportes = async () => {
         try {
@@ -158,14 +197,20 @@ const TareaDetails = ({ route, navigation }) => {
                         }
                     }
 
-                    // 🔹 Obtener evidencias de este técnico
-                    const evidencias = await getEvidenciasPorUsuario(id, idUsuario);
+                    // 🔹 Obtener evidencias del técnico, incluyendo idEvidenciaDoc y fotografias
+                    const evidenciasRef = collection(db, "TAREA", id, "Evidencias");
+                    const q = query(evidenciasRef, where("IDUsuario", "==", idUsuario));
+                    const evidenciasSnap = await getDocs(q);
+
+                    const evidencias = evidenciasSnap.docs.map(docE => ({
+                        idEvidenciaDoc: docE.id,                       // ID del documento
+                        fotografias: docE.data().fotografias || [],   // array de fotos
+                        fechaDeEntrega: docE.data().fechaDeEntrega?.toDate?.() || new Date(),
+                    }));
 
                     return { id: d.id, idUsuario, ...data, usuario, evidencias };
                 })
             );
-
-            setTecnicos(tecnicosData);
 
             setTecnicos(tecnicosData);
         } catch (error) {
@@ -174,6 +219,7 @@ const TareaDetails = ({ route, navigation }) => {
             setLoading(false);
         }
     }, [id]);
+
 
     // 🔹 useEffect para cargar datos al montar o cuando cambia id
     useEffect(() => {
@@ -201,10 +247,6 @@ const TareaDetails = ({ route, navigation }) => {
             return [];
         }
     };
-
-
-
-
 
     const formatFecha = (fecha) => {
         if (!fecha) return "";
@@ -239,67 +281,67 @@ const TareaDetails = ({ route, navigation }) => {
 
     //Funcion para cambiar de color la estado de la TAREA
     const getEstadoStyle = (estado) => {
-        if (!estado) return { backgroundColor: profile.modoOscuro === true ? "white" : "black", color: profile.modoOscuro === true ? "white" : "black", };
+        if (!estado) return { backgroundColor: profile.modoOscuro === true ? "black" : "white", color: profile.modoOscuro === true ? "black" : "white", };
         const status = estado;
 
         if (status === 'Completada') {
             return {
                 backgroundColor: '#47A997',
-                color: profile.modoOscuro === true ? "white" : "black",
+                color: profile.modoOscuro === true ? "black" : "white",
             };
         } else if (status === 'Revisada') {
             return {
                 backgroundColor: '#B383E2',
-                color: profile.modoOscuro === true ? "white" : "black",
+                color: profile.modoOscuro === true ? "black" : "white",
             };
         } else if (status === "Pendiente") {
             return {
                 backgroundColor: '#F4C54C',
-                color: profile.modoOscuro === true ? "white" : "black",
+                color: profile.modoOscuro === true ? "black" : "white",
             };
         } else if (status === "En Proceso") {
             return {
                 backgroundColor: '#57A7FE',
-                color: profile.modoOscuro === true ? "white" : "black",
+                color: profile.modoOscuro === true ? "black" : "white",
             };
         } else if (status === "No Entregada") {
             return {
                 backgroundColor: '#F5615C',
-                color: profile.modoOscuro === true ? "white" : "black",
+                color: profile.modoOscuro === true ? "black" : "white",
             };
         }
 
         return {
             backgroundColor: profile.modoOscuro === true ? "white" : "black",
-            color: profile.modoOscuro === true ? "white" : "black",
+            color: profile.modoOscuro === true ? "black" : "white",
         };
     };
 
     //Funcion para cambiar de color la prioridad de la TAREA
     const getPrioridadStyle = (prioridad) => {
-        if (!prioridad) return { backgroundColor: profile.modoOscuro === true ? "white" : "black", color: profile.modoOscuro === true ? "#EDEDED" : "black", };
+        if (!prioridad) return { backgroundColor: profile.modoOscuro === true ? "black" : "white", color: profile.modoOscuro === true ? "black" : "#EDEDED", };
         const status = prioridad;
 
         if (status === 'Alta') {
             return {
                 backgroundColor: '#F5615C',
-                color: profile.modoOscuro === true ? "white" : "black",
+                color: profile.modoOscuro === true ? "black" : "white",
             };
         } else if (status === 'Media') {
             return {
                 backgroundColor: '#F5C44C',
-                color: profile.modoOscuro === true ? "white" : "black",
+                color: profile.modoOscuro === true ? "black" : "white",
             };
         } else if (status === "Baja") {
             return {
                 backgroundColor: '#57A6FF',
-                color: profile.modoOscuro === true ? "white" : "black",
+                color: profile.modoOscuro === true ? "black" : "white",
             };
         }
 
         return {
-            backgroundColor: profile.modoOscuro === true ? "white" : "black",
-            color: profile.modoOscuro === true ? "white" : "black",
+            backgroundColor: profile.modoOscuro === true ? "black" : "white",
+            color: profile.modoOscuro === true ? "black" : "white",
         };
     };
 
@@ -321,6 +363,11 @@ const TareaDetails = ({ route, navigation }) => {
                             await updateDoc(refTarea, { estado: "En Proceso" });
                             cambio = true;
                             setVisibleModal(false);
+                            Toast.show({
+                                type: 'success',
+                                text1: 'Tarea En Proceso',
+                                text2: '¡Buen trabajo, sigue así!',
+                            });
                         }
 
                         break;
@@ -334,6 +381,11 @@ const TareaDetails = ({ route, navigation }) => {
                             await updateDoc(refTarea, { estado: "Completada" });
                             cambio = true;
                             setVisibleModal(false);
+                            Toast.show({
+                                type: 'success',
+                                text1: 'Tarea completada',
+                                text2: '¡Buen trabajo, sigue así!',
+                            });
                         }
                         break;
 
@@ -346,6 +398,11 @@ const TareaDetails = ({ route, navigation }) => {
                             await updateDoc(refTarea, { estado: "En Proceso" });
                             cambio = true;
                             setVisibleModal(false);
+                            Toast.show({
+                                type: 'success',
+                                text1: 'Entrega Cancelada',
+                                text2: '¡Asegurate de entregarla a tiempo!',
+                            });
                         }
                         break;
 
@@ -365,6 +422,11 @@ const TareaDetails = ({ route, navigation }) => {
                         await updateDoc(refTarea, { estado: "Revisada" });
                         cambio = true;
                         setVisibleModal(false);
+                        Toast.show({
+                            type: 'success',
+                            text1: 'Tarea Revisada',
+                            text2: '¡Buen trabajo!',
+                        });
                     }
                 }
 
@@ -377,6 +439,11 @@ const TareaDetails = ({ route, navigation }) => {
                         await updateDoc(refTarea, { estado: "Completada" });
                         cambio = true;
                         setVisibleModal(false);
+                        Toast.show({
+                            type: 'success',
+                            text1: 'Revisión Cancelada',
+                            text2: '¡Asegurate de entregarla a tiempo!',
+                        });
                     }
                 }
             }
@@ -444,24 +511,45 @@ const TareaDetails = ({ route, navigation }) => {
         })
     ).current;
 
+    const screenWidth = Dimensions.get("window").width;
+
+    // Creamos un estado para guardar las alturas de cada imagen
+    const [heights, setHeights] = useState([]);
+    useEffect(() => {
+        if (tarea.imagenAdjuntaInstrucciones && tarea.imagenAdjuntaInstrucciones.length > 0) {
+            tarea.imagenAdjuntaInstrucciones.forEach((url, index) => {
+                Image.getSize(url, (width, height) => {
+                    const scaleFactor = screenWidth / width;
+                    const imageHeight = height * scaleFactor;
+
+                    setHeights(prev => {
+                        const newHeights = [...prev];
+                        newHeights[index] = imageHeight;
+                        return newHeights;
+                    });
+                });
+            });
+        }
+    }, [tarea.imagenAdjuntaInstrucciones]);
+
     if (loading) {
         return (
-            <View style={profile.modoOscuro === true ? styles.loaderClaro : styles.loaderOscuro}>
+            <View style={profile.modoOscuro === true ? styles.loaderOscuro : styles.loaderClaro}>
                 <ActivityIndicator size="large" color="#007AFF" />
-                <Text style={{ color: profile.modoOscuro === true ? "black" : "#FFFF" }}>Cargando datos...</Text>
+                <Text style={{ color: profile.modoOscuro === true ? "#FFFF" : "black" }}>Cargando datos...</Text>
             </View>
         );
     }
 
     return (
-        <View style={{ flex: 1, backgroundColor: profile.modoOscuro ? "white" : "#2C2C2C", }}>
+        <View style={{ flex: 1, backgroundColor: profile.modoOscuro ? "#2C2C2C" : "white", }}>
             <View style={{ marginTop: 30, justifyContent: "space-between", flexDirection: "row" }}>
                 <TouchableOpacity style={{ padding: 10 }} onPress={() => navigation.goBack()}>
-                    <Ionicons name="chevron-back" size={24} color={profile.modoOscuro === true ? "black" : "#FFFF"} />
+                    <Ionicons name="chevron-back" size={24} color={profile.modoOscuro === true ? "#FFFF" : "black"} />
                 </TouchableOpacity>
                 {(profile.rol === "Administrador" || profile.rol === "Gestor") ? (
                     <TouchableOpacity onPress={() => navigation.navigate("EditTarea", { id: id })} style={{ padding: 10 }}>
-                        <Feather name="edit" size={24} color={profile.modoOscuro === true ? "black" : "#FFFF"} />
+                        <Feather name="edit" size={24} color={profile.modoOscuro === true ? "#FFFF" : "black"} />
                     </TouchableOpacity>
                 ) : (
                     <View />
@@ -470,7 +558,7 @@ const TareaDetails = ({ route, navigation }) => {
             <ScrollView style={{ paddingHorizontal: 15, paddingTop: 5, borderTopWidth: 1, borderColor: "#D9D9D9" }}>
                 <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
                     <View style={{ paddingRight: profile.rol === "Administrador" || profile.rol === "Gestor" ? 10 : 0 }}>
-                        <Text style={profile.modoOscuro === true ? styles.nombreClaro : styles.nombreOscuro}>{tarea.nombre}</Text>
+                        <Text style={profile.modoOscuro === true ? styles.nombreOscuro : styles.nombreClaro}>{tarea.nombre}</Text>
                     </View>
                 </View>
                 <View style={{ flexDirection: "row", gap: 10, marginVertical: 5 }}>
@@ -482,24 +570,24 @@ const TareaDetails = ({ route, navigation }) => {
                     </View>
                 </View>
                 <View>
-                    <Text style={profile.modoOscuro === true ? styles.descripcionClaro : styles.descripcionOscuro}>{tarea.descripcion}</Text>
+                    <Text style={profile.modoOscuro === true ? styles.descripcionOscuro : styles.descripcionClaro}>{tarea.descripcion}</Text>
                 </View>
                 <View style={{ flexDirection: "row", gap: 7, marginTop: 10 }}>
                     <View style={{ alignItems: "center", justifyContent: "center" }}>
-                        <Feather name="calendar" size={20} color={profile.modoOscuro === true ? "#7B7B7B" : "#d2d2d2ff"} />
+                        <Feather name="calendar" size={20} color={profile.modoOscuro === true ? "#d2d2d2ff" : "#7B7B7B"} />
                     </View>
                     <View style={{ alignItems: "center", justifyContent: "center" }}>
-                        <Text style={profile.modoOscuro === true ? styles.numerosClaro : styles.numerosOscuro}>
+                        <Text style={profile.modoOscuro === true ? styles.numerosOscuro : styles.numerosClaro}>
                             {formatFecha(tarea.fechaCreacion)} - {formatFecha(tarea.fechaEntrega)}
                         </Text>
                     </View>
                 </View>
                 <View style={{ flexDirection: "row", gap: 7, marginBottom: 10 }}>
                     <View style={{ alignItems: "center", justifyContent: "center" }}>
-                        <FontAwesome5 name="user-tie" size={20} color={profile.modoOscuro === true ? "#7B7B7B" : "#d2d2d2ff"} />
+                        <FontAwesome5 name="user-tie" size={20} color={profile.modoOscuro === true ? "#d2d2d2ff" : "#7B7B7B"} />
                     </View>
                     <View style={{ alignItems: "center", justifyContent: "center" }}>
-                        <Text style={profile.modoOscuro === true ? styles.numerosClaro : styles.numerosOscuro}>
+                        <Text style={profile.modoOscuro === true ? styles.numerosOscuro : styles.numerosClaro}>
                             Por el {creador?.rol ?? ""}{" "}
                             {[
                                 creador?.primerNombre ?? "",
@@ -513,8 +601,25 @@ const TareaDetails = ({ route, navigation }) => {
 
                     </View>
                 </View>
+                {tarea.imagenAdjuntaInstrucciones && tarea.imagenAdjuntaInstrucciones.length > 0 && (
+                    <View>
+                        {tarea.imagenAdjuntaInstrucciones.map((url, index) => (
+                            <Image
+                                key={index}
+                                source={{ uri: url }}
+                                style={{
+                                    width: "100%",
+                                    height: heights[index] || 200,
+                                    borderRadius: 10,
+                                    marginBottom: 5,
+                                }}
+                                resizeMode="contain"
+                            />
+                        ))}
+                    </View>
+                )}
                 <View style={{ paddingBottom: 20 }}>
-                    <Text style={[styles.titulo, { paddingTop: 20 }, { color: profile.modoOscuro === true ? 'black' : "white" }]}>Asignación de la Tarea</Text>
+                    <Text style={[styles.titulo, { paddingTop: 20 }, { color: profile.modoOscuro === true ? "white" : 'black' }]}>Asignación de la Tarea</Text>
                     {tecnicos.map((tecnico) => (
                         <View key={tecnico.id}>
                             <View>
@@ -543,7 +648,7 @@ const TareaDetails = ({ route, navigation }) => {
                                     <View style={{ justifyContent: "center", paddingLeft: 10, flex: 1 }}>
                                         <Text
                                             style={{
-                                                color: profile.modoOscuro ? "#FFFF" : "black",
+                                                color: profile.modoOscuro ? "black" : "#FFFF",
                                                 fontWeight: "500",
                                                 fontSize: 16,
                                             }}
@@ -566,7 +671,7 @@ const TareaDetails = ({ route, navigation }) => {
                                         <MaterialIcons
                                             name={expandido[tecnico.id] ? "keyboard-arrow-up" : "keyboard-arrow-down"}
                                             size={24}
-                                            color={profile.modoOscuro ? "white" : "black"}
+                                            color={profile.modoOscuro ? "black" : "white"}
                                         />
                                     </TouchableOpacity>
                                 </View>
@@ -576,34 +681,74 @@ const TareaDetails = ({ route, navigation }) => {
                                         style={{
                                             paddingHorizontal: 10,
                                             paddingVertical: 14,
-                                            backgroundColor: tecnico.idUsuario === profile.id ? "#75cd72ff" : "#abbbdfff",
+                                            backgroundColor:
+                                                tecnico.idUsuario === profile.id ? "#75cd72ff" : "#abbbdfff",
                                             marginTop: -8,
                                             zIndex: 3,
+                                            justifyContent: "center",
+                                            alignContent: "center",
                                         }}
                                     >
-                                        <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
-                                            {tecnico.evidencias?.map((img, index) => (
-                                                <TouchableOpacity
-                                                    key={index}
-                                                    onPress={() => openModal(tecnico.evidencias, tecnico.fechaDeEntrega?.toDate?.() || new Date(), index)}
-                                                >
-                                                    <Image
-                                                        source={{ uri: img }}
-                                                        style={{ width: 100, height: 100, margin: 5, borderRadius: 10 }}
-                                                    />
-                                                </TouchableOpacity>
+                                        <View style={{ flexDirection: "row", flexWrap: "wrap", padding: 4 }}>
+                                            {tecnico.evidencias?.map((evidencia) =>
+                                                evidencia.fotografias.map((img, index) => (
+                                                    <View key={index} style={{ position: "relative", margin: 4 }}>
+                                                        <TouchableOpacity
+                                                            onPress={() => openModal(evidencia.fotografias, evidencia.fechaDeEntrega, index)}
+                                                        >
+                                                            <Image source={{ uri: img }} style={{ width: 100, height: 100, borderRadius: 10 }} />
+                                                        </TouchableOpacity>
 
-                                            ))}
+                                                        {profile.rol == "Tecnico" &&
+                                                            <View>
+                                                                {tarea.estado == "En Proceso" &&
+                                                                    <TouchableOpacity
+                                                                        onPress={() => eliminarEvidencia(id, evidencia.idEvidenciaDoc, img)}
+                                                                        style={{
+                                                                            position: "absolute",
+                                                                            top: 5,
+                                                                            right: 5,
+                                                                            backgroundColor: "rgba(255,255,255,0.8)",
+                                                                            borderRadius: 20,
+                                                                            padding: 2,
+                                                                        }}
+                                                                    >
+                                                                        <AntDesign name="delete" size={18} color="red" />
+                                                                    </TouchableOpacity>
+                                                                }
+                                                            </View>
+                                                        }
+                                                    </View>
+                                                ))
+                                            )}
+                                        </View>
+                                        <View>
+                                            {/* <TouchableOpacity
+                                                style={
+                                                    profile.modoOscuro
+                                                        ? styles.botonVerReporteClaro
+                                                        : styles.botonVerReporteOscuro
+                                                }
+                                            >
+                                                <Text
+                                                    style={
+                                                        profile.modoOscuro
+                                                            ? { color: "#777676ff", fontWeight: 600, fontSize: 14 }
+                                                            : { color: "white", fontWeight: 600, fontSize: 14 }
+                                                    }
+                                                >
+                                                    Ver Reporte
+                                                </Text>
+                                            </TouchableOpacity> */}
                                         </View>
                                     </View>
                                 )}
-
                             </View>
                         </View>
                     ))}
                 </View>
             </ScrollView >
-            <View >
+            <View style={{ paddingBottom: 10 }}>
                 {profile.rol === "Tecnico" && (
                     <View >
                         {tarea.estado === "Pendiente" && (
@@ -612,7 +757,7 @@ const TareaDetails = ({ route, navigation }) => {
                                     style={[styles.botonEnProceso]}
                                     onPress={() => updateEstado(true)}
                                 >
-                                    <Text style={profile.modoOscuro === true ? { color: 'white', fontWeight: 600, fontSize: 16 } : { color: "black", fontWeight: 600, fontSize: 16 }}>Marcar como en proceso</Text>
+                                    <Text style={profile.modoOscuro === true ? { color: "black", fontWeight: 600, fontSize: 16 } : { color: 'white', fontWeight: 600, fontSize: 16 }} >Marcar como en proceso</Text>
                                 </TouchableOpacity>
                             </View>
                         )}
@@ -622,14 +767,14 @@ const TareaDetails = ({ route, navigation }) => {
                                     style={[styles.botonAdjuntar]}
                                     onPress={openSheet}
                                 >
-                                    <AntDesign name="plus" size={20} color={profile.modoOscuro === true ? "#777676ff" : "#FFFF"} />
-                                    <Text style={profile.modoOscuro === true ? { color: "#777676ff", fontWeight: 600, fontSize: 16 } : { color: 'white', fontWeight: 600, fontSize: 16 }}>Evidencias</Text>
+                                    <AntDesign name="plus" size={20} color={profile.modoOscuro === true ? "#FFFF" : "#777676ff"} />
+                                    <Text style={profile.modoOscuro === true ? { color: 'white', fontWeight: 600, fontSize: 16 } : { color: "#777676ff", fontWeight: 600, fontSize: 16 }}>Evidencias</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity
                                     style={[styles.botonEnCompletada]}
                                     onPress={() => updateEstado(true)}
                                 >
-                                    <Text style={profile.modoOscuro === true ? { color: 'white', fontWeight: 600, fontSize: 16 } : { color: "black", fontWeight: 600, fontSize: 16 }}>Marcar como completada</Text>
+                                    <Text style={profile.modoOscuro === true ? { color: "black", fontWeight: 600, fontSize: 16 } : { color: 'white', fontWeight: 600, fontSize: 16 }}>Marcar como completada</Text>
                                 </TouchableOpacity>
                             </View>
                         )}
@@ -639,7 +784,7 @@ const TareaDetails = ({ route, navigation }) => {
                                     style={[styles.botonCancelarEntrega]}
                                     onPress={() => updateEstado(true)}
                                 >
-                                    <Text style={profile.modoOscuro === true ? { color: 'white', fontWeight: 600, fontSize: 16 } : { color: "black", fontWeight: 600, fontSize: 16 }}>Cancelar entrega</Text>
+                                    <Text style={profile.modoOscuro === true ? { color: "black", fontWeight: 600, fontSize: 16 } : { color: 'white', fontWeight: 600, fontSize: 16 }}>Cancelar entrega</Text>
                                 </TouchableOpacity>
                             </View>
                         )}
@@ -655,7 +800,7 @@ const TareaDetails = ({ route, navigation }) => {
                                         style={[styles.botonMarcarRevisada]}
                                         onPress={() => updateEstado(true)}
                                     >
-                                        <Text style={profile.modoOscuro === true ? { color: 'white', fontWeight: 600, fontSize: 16 } : { color: "black", fontWeight: 600, fontSize: 16 }}>Marcar como revisada</Text>
+                                        <Text style={profile.modoOscuro === true ? { color: "black", fontWeight: 600, fontSize: 16 } : { color: 'white', fontWeight: 600, fontSize: 16 }}>Marcar como revisada</Text>
                                     </TouchableOpacity>
                                 </View>
                             )
@@ -668,7 +813,7 @@ const TareaDetails = ({ route, navigation }) => {
                                         style={[styles.botonCancelarEntrega]}
                                         onPress={() => updateEstado(true)}
                                     >
-                                        <Text style={profile.modoOscuro === true ? { color: 'white', fontWeight: 600, fontSize: 16 } : { color: "black", fontWeight: 600, fontSize: 16 }}>Cancelar Revisión</Text>
+                                        <Text style={profile.modoOscuro === true ? { color: "black", fontWeight: 600, fontSize: 16 } : { color: 'white', fontWeight: 600, fontSize: 16 }}>Cancelar Revisión</Text>
                                     </TouchableOpacity>
                                 </View>
                             )
@@ -688,7 +833,7 @@ const TareaDetails = ({ route, navigation }) => {
                                         onPress={() => updateEstado(true)}
 
                                     >
-                                        <Text style={profile.modoOscuro === true ? { color: 'white', fontWeight: 600, fontSize: 16 } : { color: "black", fontWeight: 600, fontSize: 16 }}>Marcar como revisada</Text>
+                                        <Text style={profile.modoOscuro === true ? { color: "black", fontWeight: 600, fontSize: 16 } : { color: 'white', fontWeight: 600, fontSize: 16 }}>Marcar como revisada</Text>
                                     </TouchableOpacity>
                                 </View>
                             )
@@ -702,7 +847,7 @@ const TareaDetails = ({ route, navigation }) => {
                                         onPress={() => updateEstado(true)}
 
                                     >
-                                        <Text style={profile.modoOscuro === true ? { color: 'white', fontWeight: 600, fontSize: 16 } : { color: "black", fontWeight: 600, fontSize: 16 }}>Cancelar Revisión</Text>
+                                        <Text style={profile.modoOscuro === true ? { color: "black", fontWeight: 600, fontSize: 16 } : { color: 'white', fontWeight: 600, fontSize: 16 }}>Cancelar Revisión</Text>
                                     </TouchableOpacity>
                                 </View>
                             )
@@ -712,82 +857,86 @@ const TareaDetails = ({ route, navigation }) => {
                 )
                 }
             </View>
-            {visible && (
-                <Animated.View
-                    {...panResponder.panHandlers}
-                    style={{
-                        position: 'absolute',
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        height: 200,
-                        flex: 1,
-                        transform: [{ translateY }],
-                        borderTopLeftRadius: 20,
-                        borderTopRightRadius: 20,
-                        backgroundColor: profile.modoOscuro === true ? "white" : "#2C2C2C",
-                        paddingHorizontal: 20,
-                        paddingTop: "5",
-                        shadowColor: '#000',
-                        shadowOpacity: 0.2,
-                        shadowOffset: { width: 0, height: -2 },
-                        borderTopWidth: 1,
-                        borderLeftWidth: 1,
-                        borderRightWidth: 1,
-                        borderColor: "#D9D9D9",
-                    }}
-                >
-                    <View style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <View
-                            style={{ width: 52, height: 6, borderRadius: 3, backgroundColor: "#e5e7eb" }}
-                        />
-                    </View>
-                    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 5 }}>
-                        <Text style={{ fontSize: 16, fontWeight: '600', color: profile.modoOscuro === true ? "#777676ff" : "white" }}>
-                            Selecciona una opción
-                        </Text>
-                        <TouchableOpacity onPress={closeSheet} style={{ padding: 10 }}>
-                            <AntDesign name="close" size={24} color={profile.modoOscuro ? "#777676ff" : "white"} />
-                        </TouchableOpacity>
-                    </View>
-                    <View style={{ gap: 5, marginTop: 5 }}>
-                        <TouchableOpacity style={styles.botonAdjuntar} onPress={() => console.log('📄 Reporte')}>
-                            <Feather name="file-text" size={24} color={profile.modoOscuro === true ? "#777676ff" : "white"} />
-                            <Text style={profile.modoOscuro === true ? { color: "#777676ff", fontWeight: 600, fontSize: 16 } : { color: 'white', fontWeight: 600, fontSize: 16 }}>Reporte</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity style={styles.botonAdjuntar} onPress={() => fotografias(setFoto, saveEvidencias)}>
-                            <FontAwesome name="picture-o" size={24} color={profile.modoOscuro === true ? "#777676ff" : "white"} />
-                            <Text style={profile.modoOscuro === true ? { color: "#777676ff", fontWeight: 600, fontSize: 16 } : { color: 'white', fontWeight: 600, fontSize: 16 }}>Fotografía</Text>
-                        </TouchableOpacity>
-                    </View>
-                </Animated.View>
-            )}
-            {visibleModal && (<Modal
-                animationType='fade'
-                transparent={true}
-                onRequestClose={() => {
-                    setVisibleModal(!false);
-                }}
-            >
-                <View style={styles.centeredView}>
-                    <View style={profile.modoOscuro === true ? styles.modalViewClaro : styles.modalViewOscuro}>
-                        <Text style={{ fontWeight: 500, fontSize: 16, color: profile.modoOscuro === true ? "black" : "white" }}>
-                            {textoPrincipal}
-                        </Text>
-                        <Text style={{ color: profile.modoOscuro === true ? "black" : "white", fontSize: 14 }}>{textoSecundario}</Text>
-                        <View style={{ flexDirection: "row", gap: 10, marginTop: 7 }}>
-                            <TouchableOpacity onPress={() => setVisibleModal(false)} style={{ flex: 1, backgroundColor: "red", paddingVertical: 10, borderRadius: 8, justifyContent: "center", alignItems: 'center' }}>
-                                <Text style={{ color: "white", fontWeight: "600" }}>No</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity onPress={() => updateEstado(false)} style={{ flex: 1, backgroundColor: "green", paddingVertical: 10, borderRadius: 8, justifyContent: "center", alignItems: 'center' }}>
-                                <Text style={{ color: "white", fontWeight: "600" }}>Si</Text>
+            {
+                visible && (
+                    <Animated.View
+                        {...panResponder.panHandlers}
+                        style={{
+                            position: 'absolute',
+                            bottom: 0,
+                            left: 0,
+                            right: 0,
+                            height: 200,
+                            flex: 1,
+                            transform: [{ translateY }],
+                            borderTopLeftRadius: 20,
+                            borderTopRightRadius: 20,
+                            backgroundColor: profile.modoOscuro === true ? "white" : "#2C2C2C",
+                            paddingHorizontal: 20,
+                            paddingTop: "5",
+                            shadowColor: '#000',
+                            shadowOpacity: 0.2,
+                            shadowOffset: { width: 0, height: -2 },
+                            borderTopWidth: 1,
+                            borderLeftWidth: 1,
+                            borderRightWidth: 1,
+                            borderColor: "#D9D9D9",
+                        }}
+                    >
+                        <View style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            <View
+                                style={{ width: 52, height: 6, borderRadius: 3, backgroundColor: "#e5e7eb" }}
+                            />
+                        </View>
+                        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginTop: 5 }}>
+                            <Text style={{ fontSize: 16, fontWeight: '600', color: profile.modoOscuro === true ? "#777676ff" : "white" }}>
+                                Selecciona una opción
+                            </Text>
+                            <TouchableOpacity onPress={closeSheet} style={{ padding: 10 }}>
+                                <AntDesign name="close" size={24} color={profile.modoOscuro ? "#777676ff" : "white"} />
                             </TouchableOpacity>
                         </View>
+                        <View style={{ gap: 5, marginTop: 5 }}>
+                            <TouchableOpacity style={styles.botonAdjuntar} onPress={() => console.log('📄 Reporte')}>
+                                <Feather name="file-text" size={24} color={profile.modoOscuro === true ? "#777676ff" : "white"} />
+                                <Text style={profile.modoOscuro === true ? { color: "#777676ff", fontWeight: 600, fontSize: 16 } : { color: 'white', fontWeight: 600, fontSize: 16 }}>Reporte</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity style={styles.botonAdjuntar} onPress={() => fotografias(setFoto, saveEvidencias)}>
+                                <FontAwesome name="picture-o" size={24} color={profile.modoOscuro === true ? "#777676ff" : "white"} />
+                                <Text style={profile.modoOscuro === true ? { color: "#777676ff", fontWeight: 600, fontSize: 16 } : { color: 'white', fontWeight: 600, fontSize: 16 }}>Fotografía</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </Animated.View>
+                )
+            }
+            {
+                visibleModal && (<Modal
+                    animationType='fade'
+                    transparent={true}
+                    onRequestClose={() => {
+                        setVisibleModal(!false);
+                    }}
+                >
+                    <View style={styles.centeredView}>
+                        <View style={profile.modoOscuro === true ? styles.modalViewClaro : styles.modalViewOscuro}>
+                            <Text style={{ fontWeight: 500, fontSize: 16, color: profile.modoOscuro === true ? "black" : "white" }}>
+                                {textoPrincipal}
+                            </Text>
+                            <Text style={{ color: profile.modoOscuro === true ? "black" : "white", fontSize: 14 }}>{textoSecundario}</Text>
+                            <View style={{ flexDirection: "row", gap: 10, marginTop: 7 }}>
+                                <TouchableOpacity onPress={() => setVisibleModal(false)} style={{ flex: 1, backgroundColor: "red", paddingVertical: 10, borderRadius: 8, justifyContent: "center", alignItems: 'center' }}>
+                                    <Text style={{ color: "white", fontWeight: "600" }}>No</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity onPress={() => updateEstado(false)} style={{ flex: 1, backgroundColor: "green", paddingVertical: 10, borderRadius: 8, justifyContent: "center", alignItems: 'center' }}>
+                                    <Text style={{ color: "white", fontWeight: "600" }}>Si</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
                     </View>
-                </View>
-            </Modal>
-            )}
+                </Modal>
+                )
+            }
             <Modal
                 visible={modalVisible}
                 transparent
@@ -801,10 +950,9 @@ const TareaDetails = ({ route, navigation }) => {
                     alignItems: "center"
                 }}>
                     <View style={{
-                        width: "90%",
-                        backgroundColor: profile.modoOscuro ? "white" : "#2C2C2C",
-                        borderRadius: 10,
-                        padding: 10
+                        width: "100%",
+                        padding: 2,
+                        borderRadius: 8,
                     }}>
                         <FlatList
                             data={carouselItems}
@@ -813,7 +961,7 @@ const TareaDetails = ({ route, navigation }) => {
                             keyExtractor={(item, i) => i.toString()}
                             showsHorizontalScrollIndicator={false}
                             onMomentumScrollEnd={(ev) => {
-                                const newIndex = Math.round(ev.nativeEvent.contentOffset.x / (windowWidth * 0.8));
+                                const newIndex = Math.round(ev.nativeEvent.contentOffset.x / (windowWidth * 1));
                                 setActiveIndex(newIndex);
                             }}
                             renderItem={({ item }) => {
@@ -822,8 +970,8 @@ const TareaDetails = ({ route, navigation }) => {
                                     <Image
                                         source={{ uri: item }}
                                         style={{
-                                            width: windowWidth * 0.8,
-                                            height: 300,
+                                            width: windowWidth * 1,
+                                            height: heights[item] || 300,
                                             borderRadius: 10,
                                             marginHorizontal: 5,
                                         }}
@@ -924,6 +1072,28 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: "#D9D9D9",
         height: 45,
+        justifyContent: "center",
+        alignItems: "center",
+        borderRadius: 13
+    },
+    botonVerReporteClaro: {
+        backgroundColor: "white",
+        flexDirection: "row",
+        gap: 5,
+        borderWidth: 1,
+        borderColor: "#D9D9D9",
+        height: 35,
+        justifyContent: "center",
+        alignItems: "center",
+        borderRadius: 13
+    },
+    botonVerReporteOscuro: {
+        backgroundColor: "#2C2C2C",
+        flexDirection: "row",
+        gap: 5,
+        borderWidth: 1,
+        borderColor: "#D9D9D9",
+        height: 35,
         justifyContent: "center",
         alignItems: "center",
         borderRadius: 13

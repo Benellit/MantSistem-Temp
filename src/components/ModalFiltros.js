@@ -4,10 +4,10 @@ import { collection, getDocs, getFirestore } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import DropDownPicker from "react-native-dropdown-picker";
-import appFirebase from '../../credenciales/Credenciales';
-import { useAuth } from "../../screens/login/AuthContext";
+import appFirebase from '../credenciales/Credenciales';
+import { useAuth } from "../screens/login/AuthContext";
 
-const ModalFiltrosAdmin = ({ open, setOpenFiltros }) => {
+const ModalFiltros = ({ open, setOpenFiltros, setFiltros, filtros }) => {
     const db = getFirestore(appFirebase);
     const { profile } = useAuth();
 
@@ -31,6 +31,37 @@ const ModalFiltrosAdmin = ({ open, setOpenFiltros }) => {
     useEffect(() => {
         obtenerSucursales();
     }, []);
+
+    useEffect(() => {
+    obtenerSucursales();
+
+    // Inicializar valores según filtros actuales
+    if (filtros) {
+        if (profile.rol === "Administrador") {
+            setValueSucursal(filtros.sucursal || null);
+        } else if (profile.rol === "Gestor" || profile.rol === "Tecnico") {
+            // Sucursal del usuario
+            if (profile.IDSucursal) {
+                const sucursalId = typeof profile.IDSucursal === "string"
+                    ? profile.IDSucursal.split("/").pop()
+                    : profile.IDSucursal.id;
+                setValueSucursal(sucursalId);
+            }
+        }
+
+        setValuePrioridad(filtros.prioridad || null);
+        setValueEstado(filtros.estado || null);
+    }
+}, [filtros]);
+
+    useEffect(() => {
+        if (sucursal.length && (profile.rol === "Gestor" || profile.rol === "Tecnico")) {
+            const sucursalId = typeof profile.IDSucursal === "string"
+                ? profile.IDSucursal.split("/").pop()
+                : profile.IDSucursal.id;
+            setValueSucursal(sucursalId);
+        }
+    }, [sucursal]);
 
     const [openPrioridad, setOpenPrioridad] = useState(false);
     const [valuePrioridad, setValuePrioridad] = useState(null);
@@ -86,43 +117,45 @@ const ModalFiltrosAdmin = ({ open, setOpenFiltros }) => {
                                 <AntDesign name="close" size={24} color={profile.modoOscuro ? "black" : "white"} />
                             </TouchableOpacity>
                         </View>
-                        <View style={styles.containerInputs}>
-                            <Text style={[profile.modoOscuro === true ? styles.labelClaro : styles.labelOscuro, { zIndex: 400 }]}>Sucursal</Text>
-                            <DropDownPicker
-                                open={openSucursal}
-                                value={valueSucursal}
-                                items={sucursal}
-                                setOpen={setOpenSucursal}
-                                setValue={setValueSucursal}
-                                setItems={setSucursal}
-                                placeholder="Selecciona sucursal"
-                                style={profile.modoOscuro === true ? styles.inputClaro : styles.inputOscuro}
-                                listMode="SCROLLVIEW"
-                                dropDownContainerStyle={{
-                                    borderColor: "#F2F3F5",
-                                    borderWidth: 2,
-                                    backgroundColor: profile.modoOscuro ? "white" : "#2C2C2C",
-                                    borderRadius: 8,
-                                }}
-                                placeholderStyle={{
-                                    color: profile.modoOscuro ? "black" : "#D1D1D1",
-                                    fontSize: 16,
-                                }}
-                                textStyle={{
-                                    color: profile.modoOscuro ? "black" : "#D1D1D1",
-                                    fontSize: 16,
-                                }}
-                                zIndex={399}
-                                zIndexInverse={400}
-                                ArrowDownIconComponent={() => (
-                                    <MaterialIcons name="keyboard-arrow-down" size={24} color={profile.modoOscuro ? "black" : "white"} />
-                                )}
-                                ArrowUpIconComponent={() => (
-                                    <MaterialIcons name="keyboard-arrow-down" size={24} color={profile.modoOscuro ? "black" : "white"} />
-                                )}
-                                onOpen={handleOpenSucursal}
-                            />
-                        </View>
+                        {profile.rol == "Administrador" &&
+                            <View style={styles.containerInputs}>
+                                <Text style={[profile.modoOscuro === true ? styles.labelClaro : styles.labelOscuro, { zIndex: 400 }]}>Sucursal</Text>
+                                <DropDownPicker
+                                    open={openSucursal}
+                                    value={valueSucursal}
+                                    items={sucursal}
+                                    setOpen={setOpenSucursal}
+                                    setValue={setValueSucursal}
+                                    setItems={setSucursal}
+                                    placeholder="Selecciona sucursal"
+                                    style={profile.modoOscuro === true ? styles.inputClaro : styles.inputOscuro}
+                                    listMode="SCROLLVIEW"
+                                    dropDownContainerStyle={{
+                                        borderColor: "#F2F3F5",
+                                        borderWidth: 2,
+                                        backgroundColor: profile.modoOscuro ? "white" : "#2C2C2C",
+                                        borderRadius: 8,
+                                    }}
+                                    placeholderStyle={{
+                                        color: profile.modoOscuro ? "black" : "#D1D1D1",
+                                        fontSize: 16,
+                                    }}
+                                    textStyle={{
+                                        color: profile.modoOscuro ? "black" : "#D1D1D1",
+                                        fontSize: 16,
+                                    }}
+                                    zIndex={399}
+                                    zIndexInverse={400}
+                                    ArrowDownIconComponent={() => (
+                                        <MaterialIcons name="keyboard-arrow-down" size={24} color={profile.modoOscuro ? "black" : "white"} />
+                                    )}
+                                    ArrowUpIconComponent={() => (
+                                        <MaterialIcons name="keyboard-arrow-down" size={24} color={profile.modoOscuro ? "black" : "white"} />
+                                    )}
+                                    onOpen={handleOpenSucursal}
+                                />
+                            </View>}
+
                         <View style={styles.containerInputs}>
                             <Text style={[profile.modoOscuro === true ? styles.labelClaro : styles.labelOscuro, { zIndex: 350 }]}>Estado</Text>
                             <DropDownPicker
@@ -204,12 +237,39 @@ const ModalFiltrosAdmin = ({ open, setOpenFiltros }) => {
                             gap: 10,
                             marginTop: 10,
                         }}>
-                            <TouchableOpacity style={[styles.botonFiltros, { flex: 1 }]}>
-                                <Text style={profile.modoOscuro === true ? { color: 'white', fontWeight: 800, fontSize: 15 } : { color: "#b4b3b3ff", fontWeight: 800, fontSize: 15 }}>Aplicar Filtros</Text>
+                            <TouchableOpacity
+                                style={[styles.botonFiltros, { flex: 1 }]}
+                                onPress={() => {
+                                    console.log("📦 Filtros aplicados:", {
+                                        sucursal: valueSucursal,
+                                        prioridad: valuePrioridad,
+                                        estado: valueEstado,
+                                    });
+                                    setFiltros({
+                                        sucursal: valueSucursal,
+                                        prioridad: valuePrioridad,
+                                        estado: valueEstado,
+                                    });
+                                    setOpenFiltros(false);
+                                }}
+
+                            >
+                                <Text style={profile.modoOscuro ? { color: 'white', fontWeight: 800, fontSize: 15 } : { color: "#b4b3b3ff", fontWeight: 800, fontSize: 15 }}>
+                                    Aplicar Filtros
+                                </Text>
                             </TouchableOpacity>
-                            <TouchableOpacity style={[styles.botonQuitarfiltros, { flex: 1 }]}>
-                                <Text style={profile.modoOscuro === true ? { color: 'white', fontWeight: 800, fontSize: 15 } : { color: "#b4b3b3ff", fontWeight: 800, fontSize: 15 }}>Quitar Filtros</Text>
+                            <TouchableOpacity
+                                style={[styles.botonQuitarfiltros, { flex: 1 }]}
+                                onPress={() => {
+                                    setFiltros({ sucursal: null, prioridad: null, estado: null });
+                                    setOpenFiltros(false);
+                                }}
+                            >
+                                <Text style={profile.modoOscuro ? { color: 'white', fontWeight: 800, fontSize: 15 } : { color: "#b4b3b3ff", fontWeight: 800, fontSize: 15 }}>
+                                    Quitar Filtros
+                                </Text>
                             </TouchableOpacity>
+
                         </View>
                     </View>
                 </View>
@@ -327,4 +387,4 @@ const styles = StyleSheet.create({
     },
 })
 
-export default ModalFiltrosAdmin
+export default ModalFiltros

@@ -4,6 +4,9 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { ActivityIndicator, View } from "react-native";
 
+// Toast Notification
+import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message';
+
 // Contexto de auth
 import { AuthProvider, useAuth } from "./src/screens/login/AuthContext";
 
@@ -31,6 +34,43 @@ import TareasShared from "./src/screens/shared/TareasShared";
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
+// Configuracion del Toast Notification
+const SuccessToast = (props) => {
+  const { profile } = useAuth();
+
+  return (
+    <BaseToast
+      {...props}
+      style={{
+        borderLeftColor: '#4CAF50',
+        backgroundColor: profile?.modoOscuro ? 'white' : '#2C2C2C',
+      }}
+      contentContainerStyle={{ paddingHorizontal: 15 }}
+      text1Style={{
+        fontSize: 15,
+        fontWeight: 'bold',
+        color: profile?.modoOscuro ? '#4CAF50' : '#2e7d32',
+      }}
+      text2Style={{
+        fontSize: 14,
+        color: '#4CAF50',
+      }}
+    />
+  );
+};
+
+// Config global
+export const toastConfig = {
+  success: (props) => <SuccessToast {...props} />,
+  error: (props) => (
+    <ErrorToast
+      {...props}
+      text1Style={{ fontSize: 15, fontWeight: 'bold' }}
+      text2Style={{ fontSize: 14 }}
+    />
+  ),
+};
+
 /* ===================== App Root ===================== */
 
 export default function App() {
@@ -54,7 +94,12 @@ function Gate() {
       </View>
     );
   }
-  return user ? <AppStack /> : <AuthStack />;
+    return (
+    <>
+      {user ? <AppStack /> : <AuthStack />}
+      <Toast config={toastConfig} />
+    </>
+  );
 }
 
 /* ===================== Stacks ===================== */
@@ -183,9 +228,9 @@ function AdminScreens() {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         tabBarStyle: {
-        backgroundColor: profile.modoOscuro ? "#171A1E" : "#FFFFFF",
+        backgroundColor: profile.modoOscuro === true ? "#2C2C2C" : "white",
         borderTopWidth: 1,
-        borderColor: profile.modoOscuro ? "rgba(255,255,255,0.10)" : "#E5E7EB",
+        borderColor: "#D9D9D9",
         elevation: 20,
         shadowOpacity: 20,
       },

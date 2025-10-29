@@ -28,7 +28,7 @@ function BottomTabNavigator() {
                         if (activeTab === "Usuarios") navigation.navigate("RegistrarUsuarios");
                     }}
                 >
-                    <AntDesign name="plus" size={28} color={profile.modoOscuro === true ? "#EDEDED" : "#121212"} />
+                    <AntDesign name="plus" size={28} color={profile.modoOscuro === true ? "#121212" : "#EDEDED"} />
                 </TouchableOpacity>
             )}
         </View>

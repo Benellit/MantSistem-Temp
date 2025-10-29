@@ -1,3 +1,4 @@
+import EvilIcons from '@expo/vector-icons/EvilIcons';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { LinearGradient } from "expo-linear-gradient";
@@ -6,7 +7,6 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, Image, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import BotonRegistrar from '../../components/BotonRegistrar';
 import appFirebase from '../../credenciales/Credenciales';
-import EvilIcons from '@expo/vector-icons/EvilIcons';
 import { useAuth } from "../login/AuthContext";
 
 const db = getFirestore(appFirebase);
@@ -49,9 +49,9 @@ const UsuariosGestor = ({ navigation }) => {
     const usuariosFiltrados = usuarios.filter(usuario => {
         const nombreCompleto = `${usuario.primerNombre || ''} ${usuario.segundoNombre || ''} ${usuario.primerApellido || ''} ${usuario.segundoApellido || ''}`.toLowerCase();
         const termino = busqueda.toLowerCase();
-        return nombreCompleto.includes(termino) || 
-               usuario.email?.toLowerCase().includes(termino) ||
-               usuario.rol?.toLowerCase().includes(termino);
+        return nombreCompleto.includes(termino) ||
+            usuario.email?.toLowerCase().includes(termino) ||
+            usuario.rol?.toLowerCase().includes(termino);
     });
 
     // Navegar al perfil del usuario seleccionado
@@ -68,64 +68,64 @@ const UsuariosGestor = ({ navigation }) => {
         >
             <View style={{ flex: 1 }}>
                 {/* Header */}
-                
+
                 <View style={profile.modoOscuro ? styles.headerOscuro : styles.headerClaro}>
-                 <Text style={profile.modoOscuro ? styles.tituloOscuro : styles.tituloClaro}>Usuarios</Text>
+                    <Text style={profile.modoOscuro ? styles.tituloOscuro : styles.tituloClaro}>Usuarios</Text>
 
 
-                <View style={{ flexDirection: 'row', gap: 10, marginBottom: 5 }}>
-                    <View style={{ marginBottom: 0, marginVertical: 5, flex: 1 }}>
-                    <TextInput
-                        placeholder="Buscar"
-                        placeholderTextColor={profile.modoOscuro === true ? '#BDBDBD' : '#6B7280'}
-                        style={[
-                        styles.inputBusqueda,
-                        { color: profile.modoOscuro === true ? '#FFFFFF' : '#111827' },
-                        ]}
-                        value={busqueda}
-                        onChangeText={setBusqueda}
-                    />
+                    <View style={{ flexDirection: 'row', gap: 10, marginBottom: 5 }}>
+                        <View style={{ marginBottom: 0, marginVertical: 5, flex: 1 }}>
+                            <TextInput
+                                placeholder="Buscar"
+                                placeholderTextColor={profile.modoOscuro === true ? '#BDBDBD' : '#6B7280'}
+                                style={[
+                                    styles.inputBusqueda,
+                                    { color: profile.modoOscuro === true ? '#FFFFFF' : '#111827' },
+                                ]}
+                                value={busqueda}
+                                onChangeText={setBusqueda}
+                            />
 
-                    {busqueda !== '' && (
-                        <TouchableOpacity
-                        disabled={refreshing}
-                        onPress={() => setBusqueda('')}
-                        style={{
-                            position: 'absolute',
-                            top: 3,
-                            right: 38,
-                            padding: 4,
-                            opacity: refreshing ? 0.5 : 1,
-                        }}
-                        >
-                        <EvilIcons name="close" size={24} color={profile.modoOscuro === true ? '#FFFFFF' : '#111827'} />
-                        </TouchableOpacity>
-                    )}
+                            {busqueda !== '' && (
+                                <TouchableOpacity
+                                    disabled={refreshing}
+                                    onPress={() => setBusqueda('')}
+                                    style={{
+                                        position: 'absolute',
+                                        top: 3,
+                                        right: 38,
+                                        padding: 4,
+                                        opacity: refreshing ? 0.5 : 1,
+                                    }}
+                                >
+                                    <EvilIcons name="close" size={24} color={profile.modoOscuro === true ? '#FFFFFF' : '#111827'} />
+                                </TouchableOpacity>
+                            )}
 
-                    <TouchableOpacity
-                        disabled={refreshing}
-                        onPress={onRefresh}
-                        style={{
-                        position: 'absolute',
-                        right: 0, 
-                        top: 0,
-                        backgroundColor: '#87aef0',
-                        padding: 10,
-                        borderTopRightRadius: 20,
-                        borderBottomRightRadius: 20,
-                        opacity: refreshing ? 0.6 : 1,
-                        }}
-                    >
-                        <FontAwesome6 name="magnifying-glass" size={16} color={profile.modoOscuro === true ? '#FFFF' : 'black'} />
-                    </TouchableOpacity>
+                            <TouchableOpacity
+                                disabled={refreshing}
+                                onPress={onRefresh}
+                                style={{
+                                    position: 'absolute',
+                                    right: 0,
+                                    top: 0,
+                                    backgroundColor: '#87aef0',
+                                    padding: 10,
+                                    borderTopRightRadius: 20,
+                                    borderBottomRightRadius: 20,
+                                    opacity: refreshing ? 0.6 : 1,
+                                }}
+                            >
+                                <FontAwesome6 name="magnifying-glass" size={16} color={profile.modoOscuro === true ? '#FFFF' : 'black'} />
+                            </TouchableOpacity>
+                        </View>
+
+                        <View style={{ marginTop: 5, justifyContent: 'center', alignContent: 'center' }}>
+                            <TouchableOpacity style={styles.opciones} onPress={() => { /* abre filtros si los usas */ }}>
+                                <Ionicons name="options-outline" size={24} color={profile.modoOscuro === true ? '#FFFF' : 'black'} />
+                            </TouchableOpacity>
+                        </View>
                     </View>
-
-                    <View style={{ marginTop: 5, justifyContent: 'center', alignContent: 'center' }}>
-                    <TouchableOpacity style={styles.opciones} onPress={() => { /* abre filtros si los usas */ }}>
-                        <Ionicons name="options-outline" size={24} color={profile.modoOscuro === true ? '#FFFF' : 'black'} />
-                    </TouchableOpacity>
-                    </View>
-                </View>
                 </View>
 
 
@@ -149,12 +149,12 @@ const UsuariosGestor = ({ navigation }) => {
                             </View>
                         ) : (
                             usuariosFiltrados.map((usuario) => (
-                                <TouchableOpacity 
-                                    key={usuario.id} 
+                                <TouchableOpacity
+                                    key={usuario.id}
                                     style={profile.modoOscuro === true ? styles.tarjetaClaro : styles.tarjetaOscuro}
                                     onPress={() => verPerfilUsuario(usuario)}
                                 >
-                                    <Image 
+                                    <Image
                                         source={{ uri: usuario.fotoPerfil || 'https://via.placeholder.com/60' }}
                                         style={styles.fotoPerfil}
                                     />
@@ -165,7 +165,7 @@ const UsuariosGestor = ({ navigation }) => {
                                         <Text style={styles.email}>{usuario.email}</Text>
                                         <View style={styles.detallesContainer}>
                                             <View style={[
-                                                styles.badge, 
+                                                styles.badge,
                                                 { backgroundColor: usuario.rol === 'Gestor' ? '#4CAF50' : '#2196F3' }
                                             ]}>
                                                 <Text style={styles.badgeText}>{usuario.rol}</Text>
@@ -179,10 +179,10 @@ const UsuariosGestor = ({ navigation }) => {
                                         </View>
                                     </View>
                                     <View style={styles.iconoFlecha}>
-                                        <Ionicons 
-                                            name="chevron-forward" 
-                                            size={24} 
-                                            color={profile.modoOscuro === true ? "#666" : "#ccc"} 
+                                        <Ionicons
+                                            name="chevron-forward"
+                                            size={24}
+                                            color={profile.modoOscuro === true ? "#666" : "#ccc"}
                                         />
                                     </View>
                                 </TouchableOpacity>
@@ -201,65 +201,61 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     headerClaro: {
-    paddingTop: 16,
-    paddingHorizontal: 15,
-    paddingBottom: 8,
-    backgroundColor: 'white',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 16,
-    borderBottomWidth: 1,
-    borderColor: '#D9D9D9',
-    marginBottom: 6,
+        paddingTop: 16,
+        paddingHorizontal: 15,
+        paddingBottom: 8,
+        backgroundColor: 'white',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 5,
+        elevation: 16,
+        borderBottomWidth: 1,
+        borderColor: '#D9D9D9',
     },
     headerOscuro: {
-    paddingTop: 16,
-    paddingHorizontal: 15,
-    paddingBottom: 8,
-    backgroundColor: '#2C2C2C',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 16,
-    borderBottomWidth: 1,
-    borderColor: '#3A3A3A',
-    marginBottom: 6,
+        paddingTop: 16,
+        paddingHorizontal: 15,
+        paddingBottom: 8,
+        backgroundColor: '#2C2C2C',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 5,
+        elevation: 16,
+        borderBottomWidth: 1,
+        borderColor: '#3A3A3A',
     },
 
- tituloClaro: {
-  color: 'black',
-  fontSize: 26,
-  fontWeight: '900',
-  marginTop: 16,
-  marginBottom: 4,
-},
-tituloOscuro: {
-  color: 'white',
-  fontSize: 26,
-  fontWeight: '900',
-  marginTop: 16,
-  marginBottom: 4,
-},
+    tituloClaro: {
+        color: 'black',
+        fontSize: 26,
+        fontWeight: 900,
+        marginTop: 16,
+    },
+    tituloOscuro: {
+        color: 'white',
+        fontSize: 26,
+        fontWeight: 900,
+        marginTop: 16,
+    },
 
-  inputBusqueda: {
-  paddingLeft: 15,
-  borderRadius: 20,
-  borderColor: '#D9D9D9',
-  borderWidth: 1,      
-  fontSize: 16,
-  paddingBottom: 7,
-  paddingTop: 7,        
-  backgroundColor: 'transparent',
-},
+    inputBusqueda: {
+        paddingLeft: 15,
+        borderRadius: 20,
+        borderColor: '#D9D9D9',
+        borderWidth: 1,
+        fontSize: 16,
+        paddingBottom: 7,
+        paddingTop: 7,
+        backgroundColor: 'transparent',
+    },
 
-  opciones: {
-  padding: 7,
-  borderRadius: 9,
-  backgroundColor: '#87aef0',
-},
+    opciones: {
+        padding: 7,
+        borderRadius: 9,
+        backgroundColor: '#87aef0',
+    },
 
     loadingContainer: {
         flex: 1,
