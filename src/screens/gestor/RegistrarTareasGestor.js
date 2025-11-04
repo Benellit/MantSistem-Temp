@@ -2,8 +2,8 @@ import AntDesign from '@expo/vector-icons/AntDesign';
 import Fontisto from '@expo/vector-icons/Fontisto';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import * as ImagePicker from "expo-image-picker";
 import axios from "axios";
+import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { collection, doc, getDoc, getDocs, getFirestore, query, setDoc, updateDoc, where } from "firebase/firestore";
 import { useEffect, useState } from "react";
@@ -18,6 +18,8 @@ const RegistrarTareasGestor = ({ navigation }) => {
     const db = getFirestore(appFirebase);
     const { profile } = useAuth();
     const [imagenes, setImagenes] = useState([]);
+    const [tipoTarea, setTipoTarea] = useState("simple");
+    const [tipoRecurrencia, setTipoRecurrencia] = useState("diario");
 
     const mostrarOpciones = () => {
         Alert.alert("Adjuntar imágenes", "Selecciona una opción", [
@@ -29,18 +31,19 @@ const RegistrarTareasGestor = ({ navigation }) => {
 
     const tomarFoto = async () => {
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
-        if (status !== "granted") {
-            alert("Necesitas otorgar permiso para usar la cámara.");
+        if (status !== 'granted') {
+            alert('Se necesita permiso para acceder a la cámara');
             return;
         }
 
         const result = await ImagePicker.launchCameraAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            mediaTypes: [ImagePicker.MediaType.IMAGE], // ✅ nueva sintaxis
             quality: 1,
         });
 
-        if (!result.canceled) {
-            setImagenes((prev) => [...prev, result.assets[0].uri]);
+
+        if (!result.canceled && result.assets?.length > 0) {
+            setImagenes(prev => [...prev, result.assets[0].uri]);
         }
     };
 
@@ -385,13 +388,13 @@ const RegistrarTareasGestor = ({ navigation }) => {
                 <View style={{ paddingTop: 40, paddingLeft: 10 }}>
                     <View style={{ flexDirection: "row", alignItems: "center" }}>
                         <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 4 }}>
-                            <Ionicons name="chevron-back" size={24} color={profile.modoOscuro === true ? "black" :  "#FFFF"} />
+                            <Ionicons name="chevron-back" size={24} color={profile.modoOscuro === true ? "black" : "#FFFF"} />
                         </TouchableOpacity>
                     </View>
 
                     <Text
                         style={{
-                            color: profile.modoOscuro ? "#2C2C2C" :  "white",
+                            color: profile.modoOscuro ? "#2C2C2C" : "white",
                             fontSize: 26,
                             fontWeight: "900",
                             marginTop: 5,
@@ -405,10 +408,21 @@ const RegistrarTareasGestor = ({ navigation }) => {
             <View style={profile.modoOscuro === true ? styles.containerOscuro : styles.containerClaro}>
                 <ScrollView style={{ paddingHorizontal: 15, borderTopRightRadius: 35, borderTopLeftRadius: 35, paddingBottom: 0 }} nestedScrollEnabled={true}>
                     <View>
-                        <Text style={[styles.titulo, { paddingTop: 20 }, { color: profile.modoOscuro === true ? "white" : 'black' }]}>Datos de la Tarea</Text>
+                        <Text style={[styles.titulo, { paddingTop: 20 }, { color: profile.modoOscuro === true ? "white" : 'black' }]}>Tipo de Tarea</Text>
+                        <ScrollView horizontal={true} style={styles.containerTiposTarea} >
+                            <View style={{ flexDirection: "row", gap: 7 }}>
+                                <TouchableOpacity onPress={() => setTipoTarea("simple")} style={tipoTarea === "simple" ? styles.btnTiposTareaActivo : styles.btnTiposTareaInactivo}><Text style={{ color: profile.modoOscuro === true ? 'black' : "white", fontWeight: 600 }}>Tarea Simple</Text></TouchableOpacity>
+                                <TouchableOpacity onPress={() => setTipoTarea("repetitiva")} style={tipoTarea === "repetitiva" ? styles.btnTiposTareaActivo : styles.btnTiposTareaInactivo}><Text style={{ color: profile.modoOscuro === true ? 'black' : "white", fontWeight: 600 }}>Tarea Repetitiva</Text></TouchableOpacity>
+                                <TouchableOpacity onPress={() => setTipoTarea("jerarquia")} style={tipoTarea === "jerarquia" ? styles.btnTiposTareaActivo : styles.btnTiposTareaInactivo}><Text style={{ color: profile.modoOscuro === true ? 'black' : "white", fontWeight: 600 }}>Tarea con Jerarquía</Text></TouchableOpacity>
+                                <TouchableOpacity onPress={() => setTipoTarea("repje")} style={tipoTarea === "repje" ? styles.btnTiposTareaActivo : styles.btnTiposTareaInactivo}><Text style={{ color: profile.modoOscuro === true ? 'black' : "white", fontWeight: 600 }}>Tarea Repetitiva + Jerarquía</Text></TouchableOpacity>
+                            </View>
+                        </ScrollView>
+                    </View>
+                    <View>
+                        <Text style={[styles.titulo, { paddingTop: 10 }, { color: profile.modoOscuro === true ? "white" : 'black' }]}>Datos de la Tarea</Text>
                         <View style={styles.containerInputs}>
                             <Text style={profile.modoOscuro === true ? styles.labelOscuro : styles.labelClaro}>Nombre</Text>
-                            <TextInput style={profile.modoOscuro === true ? styles.inputClaro : styles.inputOscuro}
+                            <TextInput style={profile.modoOscuro === true ? styles.inputOscuro : styles.inputClaro}
                                 placeholder='Escribe el nombre'
                                 placeholderTextColor={profile.modoOscuro ? "#D1D1D1" : "black"}
                                 value={nombre}
@@ -416,7 +430,7 @@ const RegistrarTareasGestor = ({ navigation }) => {
                             />
                         </View>
                         <View style={styles.containerInputs}>
-                            <Text style={profile.modoOscuro === true ? styles.labelOscuro :  styles.labelClaro}>Descripción</Text>
+                            <Text style={profile.modoOscuro === true ? styles.labelOscuro : styles.labelClaro}>Descripción</Text>
                             <TextInput style={[profile.modoOscuro === true ? styles.inputOscuro : styles.inputClaro, styles.descripcion]}
                                 placeholder='Escribe la descripción'
                                 placeholderTextColor={profile.modoOscuro ? "#D1D1D1" : "black"}
@@ -426,7 +440,7 @@ const RegistrarTareasGestor = ({ navigation }) => {
                                 onChangeText={setDescripcion}
                             />
                         </View>
-                        <View style={styles.containerInputs}>
+                        <View style={{ marginTop: 10 }}>
                             <TouchableOpacity
                                 onPress={mostrarOpciones}
                                 style={{
@@ -442,13 +456,13 @@ const RegistrarTareasGestor = ({ navigation }) => {
                                 <AntDesign
                                     name="plus"
                                     size={20}
-                                    color={profile.modoOscuro ? "black" :  "#FFF"}
+                                    color={profile.modoOscuro ? "black" : "#FFF"}
                                 />
                                 <Text
                                     style={{
                                         fontWeight: "700",
                                         fontSize: 16,
-                                        color: profile.modoOscuro ? "black" :  "#FFF",
+                                        color: profile.modoOscuro ? "black" : "#FFF",
                                     }}
                                 >
                                     Adjuntar imágenes
@@ -456,41 +470,43 @@ const RegistrarTareasGestor = ({ navigation }) => {
                             </TouchableOpacity>
 
                             {/* Mostrar imágenes seleccionadas */}
-                            <ScrollView
-                                horizontal
-                                showsHorizontalScrollIndicator={false}
-                                style={{ marginTop: 10 }}
-                            >
-                                {imagenes.map((uri, index) => (
-                                    <View key={index} style={styles.imageContainer}>
-                                        <TouchableOpacity
-                                            style={{
-                                                position: "absolute",
-                                                top: 5,
-                                                right: 5,
-                                                backgroundColor: "rgba(255,255,255,0.7)",
-                                                borderRadius: 50,
-                                                padding: 2,
-                                                zIndex: 60000,
-                                            }}
-                                            onPress={() => eliminarImagen(uri)}
-                                        >
-                                            <AntDesign name="close" size={18} color="red" />
-                                        </TouchableOpacity>
-                                        <Image
-                                            source={{ uri }}
-                                            style={{
-                                                width: 120,
-                                                height: 120,
-                                                borderRadius: 10,
-                                                marginRight: 8,
-                                            }} />
-                                    </View>
-                                ))}
-                            </ScrollView>
+                            {imagenes &&
+                                <ScrollView
+                                    horizontal
+                                    showsHorizontalScrollIndicator={false}
+                                    style={{ marginTop: 10 }}
+                                >
+                                    {imagenes.map((uri, index) => (
+                                        <View key={index} style={styles.imageContainer}>
+                                            <TouchableOpacity
+                                                style={{
+                                                    position: "absolute",
+                                                    top: 5,
+                                                    right: 5,
+                                                    backgroundColor: "rgba(255,255,255,0.7)",
+                                                    borderRadius: 50,
+                                                    padding: 2,
+                                                    zIndex: 60000,
+                                                }}
+                                                onPress={() => eliminarImagen(uri)}
+                                            >
+                                                <AntDesign name="close" size={18} color="red" />
+                                            </TouchableOpacity>
+                                            <Image
+                                                source={{ uri }}
+                                                style={{
+                                                    width: 120,
+                                                    height: 120,
+                                                    borderRadius: 10,
+                                                    marginRight: 8,
+                                                }} />
+                                        </View>
+                                    ))}
+                                </ScrollView>
+                            }
                         </View>
                         <View style={styles.containerInputs}>
-                            <Text style={profile.modoOscuro === true ? styles.labelOscuro : styles.labelClaro}>Prioridad</Text>
+                            <Text style={{ ...(profile.modoOscuro ? styles.labelOscuro : styles.labelClaro), zIndex: 700, }}>Prioridad</Text>
                             <DropDownPicker
                                 open={openPrioridad}
                                 value={valuePrioridad}
@@ -500,7 +516,7 @@ const RegistrarTareasGestor = ({ navigation }) => {
                                 setItems={setPrioridad}
                                 placeholder="Selecciona prioridad"
                                 style={[
-                                    profile.modoOscuro ? styles.inputOscuro :  styles.inputClaro,
+                                    profile.modoOscuro ? styles.inputOscuro : styles.inputClaro,
                                     styles.box
                                 ]}
                                 listMode="SCROLLVIEW"
@@ -511,15 +527,15 @@ const RegistrarTareasGestor = ({ navigation }) => {
                                     borderRadius: 8,
                                 }}
                                 placeholderStyle={{
-                                    color: profile.modoOscuro ? "#D1D1D1" :  "black",
+                                    color: profile.modoOscuro ? "#D1D1D1" : "black",
                                     fontSize: 16,
                                 }}
                                 textStyle={{
-                                    color: profile.modoOscuro ? "#D1D1D1" :  "black",
+                                    color: profile.modoOscuro ? "#D1D1D1" : "black",
                                     fontSize: 16,
                                 }}
-                                zIndex={1000}
-                                zIndexInverse={3000}
+                                zIndex={500}
+                                zIndexInverse={1501}
                                 ArrowDownIconComponent={() => (
                                     <MaterialIcons name="keyboard-arrow-down" size={24} color={profile.modoOscuro ? "white" : "black"} />
 
@@ -531,45 +547,131 @@ const RegistrarTareasGestor = ({ navigation }) => {
                                 onOpen={handleOpenPrioridad}
                             />
                         </View>
-
-                        <View style={styles.containerInputs}>
-                            <Text style={profile.modoOscuro === true ? styles.labelOscuro :  styles.labelClaro}>Fecha de entrega</Text>
-                            <TouchableOpacity onPress={() => setIsVisible(true)} style={profile.modoOscuro === true ? styles.inputOscuro : styles.inputClaro}>
-                                <View style={{
-                                    flexDirection: "row",
-                                    justifyContent: "space-between",
-                                    alignItems: "center",
-                                }}>
-                                    <View>
-                                        {
-                                            selectedDate ?
-                                                <Text style={{ fontSize: 16, color: profile.modoOscuro ? "#D1D1D1" : "black", }}>
-                                                    {selectedDate ? selectedDate.toLocaleString() : "Selecciona fecha y hora"}
-                                                </Text>
-                                                :
-                                                <Text style={{ fontSize: 16, color: selectedDate ? "#000" : "#D1D1D1" }}>
-                                                    {selectedDate ? selectedDate.toLocaleString() : "Selecciona fecha y hora"}
-                                                </Text>
-                                        }
+                        {(tipoTarea === "simple" || tipoTarea === "jerarquia") && (
+                            <View style={styles.containerInputs}>
+                                <Text style={profile.modoOscuro === true ? styles.labelOscuro : styles.labelClaro}>Fecha de entrega</Text>
+                                <TouchableOpacity onPress={() => setIsVisible(true)} style={profile.modoOscuro === true ? styles.inputOscuro : styles.inputClaro}>
+                                    <View style={{
+                                        flexDirection: "row",
+                                        justifyContent: "space-between",
+                                        alignItems: "center",
+                                    }}>
+                                        <View>
+                                            {
+                                                selectedDate ?
+                                                    <Text style={{ fontSize: 16, color: profile.modoOscuro ? "#D1D1D1" : "black", }}>
+                                                        {selectedDate ? selectedDate.toLocaleString() : "Selecciona fecha y hora"}
+                                                    </Text>
+                                                    :
+                                                    <Text style={{ fontSize: 16, color: profile.modoOscuro ? "#D1D1D1" : "black", }}>
+                                                        {selectedDate ? selectedDate.toLocaleString() : "Selecciona fecha y hora"}
+                                                    </Text>
+                                            }
+                                        </View>
+                                        <View style={{ marginRight: 10 }}>
+                                            <Fontisto name="date" size={20} color={profile.modoOscuro === true ? "#FFFF" : "black"} />
+                                        </View>
                                     </View>
-                                    <View style={{ marginRight: 10 }}>
-                                        <Fontisto name="date" size={20} color={profile.modoOscuro === true ? "#FFFF" : "black"} />
+                                </TouchableOpacity>
+
+                                <DateTimePickerModal
+                                    isVisible={isVisible}
+                                    mode={mode}
+                                    onConfirm={handleConfirm}
+                                    onCancel={() => setIsVisible(false)}
+                                    minimumDate={new Date()}
+                                    style={profile.modoOscuro === true ? styles.inputOscuro : styles.inputClaro}
+                                    zIndex={500}
+                                    zIndexInverse={1500}
+                                />
+                            </View>
+                        )}
+                        <View>
+                            {(tipoTarea === "repetitiva" || tipoTarea === "repje") && (
+                                <View>
+                                    <View style={styles.containerInputs}>
+                                        <Text style={profile.modoOscuro === true ? styles.labelOscuro : styles.labelClaro}>Hora de entrega</Text>
+                                        <TouchableOpacity onPress={() => setIsVisible(true)} style={profile.modoOscuro === true ? styles.inputOscuro : styles.inputClaro}>
+                                            <View style={{
+                                                flexDirection: "row",
+                                                justifyContent: "space-between",
+                                                alignItems: "center",
+                                            }}>
+                                                <View>
+                                                    {
+                                                        selectedDate ?
+                                                            <Text style={{ fontSize: 16, color: profile.modoOscuro ? "#D1D1D1" : "black", }}>
+                                                                {selectedDate ? selectedDate.toLocaleString() : "Selecciona la hora de entrega"}
+                                                            </Text>
+                                                            :
+                                                            <Text style={{ fontSize: 16, color: profile.modoOscuro ? "#D1D1D1" : "black", }}>
+                                                                {selectedDate ? selectedDate.toLocaleString() : "Selecciona la hora de entrega"}
+                                                            </Text>
+                                                    }
+                                                </View>
+                                                <View style={{ marginRight: 10 }}>
+                                                    <Fontisto name="clock" size={20} color={profile.modoOscuro === true ? "#FFFF" : "black"} />
+                                                </View>
+                                            </View>
+                                        </TouchableOpacity>
+
+                                        <DateTimePickerModal
+                                            isVisible={isVisible}
+                                            mode="time"
+                                            onConfirm={handleConfirm}
+                                            onCancel={() => setIsVisible(false)}
+                                            is24Hour={true}
+                                            minimumDate={new Date()}
+                                            style={profile.modoOscuro === true ? styles.inputOscuro : styles.inputClaro}
+                                            zIndex={500}
+                                            zIndexInverse={1500}
+                                        />
+                                    </View>
+                                    <View style={[styles.containerInputs, { marginTop: 25 }]}>
+                                        <Text style={[profile.modoOscuro === true ? styles.labelOscuro : styles.labelClaro, { marginTop: -18, paddingVertical: 0 }]}>Recurrencia</Text>
+                                        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+                                            <TouchableOpacity onPress={() => { setTipoRecurrencia("diario") }} style={[tipoRecurrencia === "diario" ? styles.btnTiposTareaActivo : styles.btnTiposTareaInactivo, { flex: 1, marginTop: 5 }]}><Text style={{ color: profile.modoOscuro === true ? 'black' : "white", fontWeight: 600 }}>Diaria</Text></TouchableOpacity>
+                                            <TouchableOpacity onPress={() => { setTipoRecurrencia("semanal") }} style={[tipoRecurrencia === "semanal" ? styles.btnTiposTareaActivo : styles.btnTiposTareaInactivo, { flex: 1, marginTop: 5 }]}><Text style={{ color: profile.modoOscuro === true ? 'black' : "white", fontWeight: 600 }}>Semanal</Text></TouchableOpacity>
+                                        </View>
+                                        <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 10 }}>
+                                            <TouchableOpacity onPress={() => { setTipoRecurrencia("quincenal") }} style={[tipoRecurrencia === "quincenal" ? styles.btnTiposTareaActivo : styles.btnTiposTareaInactivo, { flex: 1, marginTop: 5 }]}><Text style={{ color: profile.modoOscuro === true ? 'black' : "white", fontWeight: 600 }}>Quincenal</Text></TouchableOpacity>
+                                            <TouchableOpacity onPress={() => { setTipoRecurrencia("mensual") }} style={[tipoRecurrencia === "mensual" ? styles.btnTiposTareaActivo : styles.btnTiposTareaInactivo, { flex: 1, marginTop: 5 }]}><Text style={{ color: profile.modoOscuro === true ? 'black' : "white", fontWeight: 600 }}>Mensual</Text></TouchableOpacity>
+                                        </View>
                                     </View>
                                 </View>
-                            </TouchableOpacity>
-
-                            <DateTimePickerModal
-                                isVisible={isVisible}
-                                mode={mode}
-                                onConfirm={handleConfirm}
-                                onCancel={() => setIsVisible(false)}
-                                minimumDate={new Date()}
-                                style={profile.modoOscuro === true ? styles.inputOscuro : styles.inputClaro}
-                                zIndex={500}
-                                zIndexInverse={1500}
-                            />
+                            )}
                         </View>
-
+                    </View>
+                    {tipoTarea === "repje" &&
+                        <View style={{ marginTop: 20 }}>
+                            <Text style={[styles.titulo, { color: profile.modoOscuro === true ? "white" : 'black' }]}>Creación de jerarquia</Text>
+                            <View style={{ marginTop: 2, backgroundColor: "#eaeaeaac", padding: 12, borderRadius: 10 }}>
+                                <View style={styles.containerInputs}>
+                                    <Text style={[profile.modoOscuro === true ? styles.labelOscuro : styles.labelClaro, {backgroundColor: "transparent"}]}>Nombre</Text>
+                                    <TextInput style={profile.modoOscuro === true ? styles.inputOscuro : styles.inputClaro}
+                                        placeholder='Escribe el nombre'
+                                        placeholderTextColor={profile.modoOscuro ? "#D1D1D1" : "black"}
+                                        value={nombre}
+                                        onChangeText={setNombre}
+                                    />
+                                </View>
+                                <View style={styles.containerInputs}>
+                                    <Text style={[profile.modoOscuro === true ? styles.labelOscuro : styles.labelClaro, {backgroundColor: "transparent"}]}>Descripción</Text>
+                                    <TextInput style={[profile.modoOscuro === true ? styles.inputOscuro : styles.inputClaro, styles.descripcion]}
+                                        placeholder='Escribe la descripción'
+                                        placeholderTextColor={profile.modoOscuro ? "#D1D1D1" : "black"}
+                                        multiline={true}
+                                        textAlignVertical="top"
+                                        value={descripcion}
+                                        onChangeText={setDescripcion}
+                                    />
+                                </View>
+                                <TouchableOpacity style={{backgroundColor: "#8BA7E6", padding: 10, marginTop: 5, justifyContent: "center", alignItems: "center", borderRadius: 8}}><Text style={{fontWeight: 600, color: profile.modoOscuro ? "black" : "white"}}>Agregar Subtarea</Text></TouchableOpacity>
+                            </View>
+                        </View>
+                    }
+                    <View style={{ marginTop: 20 }}>
+                        <Text style={[styles.titulo, { color: profile.modoOscuro === true ? "white" : 'black' }]}>Asignación de la Tarea</Text>
                         <View style={styles.containerInputs}>
                             <Text style={profile.modoOscuro === true ? styles.labelOscuro : styles.labelClaro}>Sucursal</Text>
                             <DropDownPicker
@@ -599,22 +701,19 @@ const RegistrarTareasGestor = ({ navigation }) => {
                                 zIndex={100}
                                 zIndexInverse={100}
                                 ArrowDownIconComponent={() => (
-                                    <MaterialIcons name="keyboard-arrow-down" size={24} color={profile.modoOscuro ? "white" :  "black"} />
+                                    <MaterialIcons name="keyboard-arrow-down" size={24} color={profile.modoOscuro ? "white" : "black"} />
 
                                 )}
                                 ArrowUpIconComponent={() => (
-                                    <MaterialIcons name="keyboard-arrow-down" size={24} color={profile.modoOscuro ? "white" :  "black"}  />
+                                    <MaterialIcons name="keyboard-arrow-down" size={24} color={profile.modoOscuro ? "white" : "black"} />
 
                                 )}
                                 onOpen={handleOpenSucursal}
                             />
                         </View>
-                    </View>
-                    <View style={{ marginTop: 20 }}>
-                        <Text style={[styles.titulo, { color: profile.modoOscuro === true ? "white" : 'black' }]}>Asignación de la Tarea</Text>
                         <View style={{ flexDirection: "row" }}>
                             <View style={{ flex: 1 }}>
-                                <Text style={[profile.modoOscuro === true ? styles.labelOscuro :  styles.labelClaro, { zIndex: 20 }]}>Asignación</Text>
+                                <Text style={[profile.modoOscuro === true ? styles.labelOscuro : styles.labelClaro, { zIndex: 20 }]}>Asignación</Text>
                                 <DropDownPicker
                                     open={openTecnicos}
                                     value={valueTecnicos}
@@ -638,30 +737,28 @@ const RegistrarTareasGestor = ({ navigation }) => {
                                     dropDownContainerStyle={{
                                         borderColor: "#F2F3F5",
                                         borderWidth: 2,
-                                        backgroundColor: profile.modoOscuro ? "#2C2C2C" :  "white",
+                                        backgroundColor: profile.modoOscuro ? "#2C2C2C" : "white",
                                         borderRadius: 8,
                                     }}
                                     placeholderStyle={{
-                                        color: profile.modoOscuro ? "#D1D1D1" :  "black",
+                                        color: profile.modoOscuro ? "#D1D1D1" : "black",
                                         fontSize: 16,
                                     }}
                                     textStyle={{
-                                        color: profile.modoOscuro ? "#D1D1D1" :  "black",
+                                        color: profile.modoOscuro ? "#D1D1D1" : "black",
                                         fontSize: 16,
                                     }}
                                     ArrowDownIconComponent={() => (
-                                        <MaterialIcons name="keyboard-arrow-down" size={24} color={profile.modoOscuro ? "white" :  "black"} />
-
+                                        <MaterialIcons name="keyboard-arrow-down" size={24} color={profile.modoOscuro ? "white" : "black"} />
                                     )}
                                     ArrowUpIconComponent={() => (
-                                        <MaterialIcons name="keyboard-arrow-down" size={24} color={profile.modoOscuro ? "white" :  "black"} />
-
+                                        <MaterialIcons name="keyboard-arrow-down" size={24} color={profile.modoOscuro ? "white" : "black"} />
                                     )}
                                     onOpen={handleOpenTecnicos}
                                 />
                             </View>
                             <View style={{ marginTop: 15 }}>
-                                <TouchableOpacity style={styles.masTecnicos} onPress={acomodarArrayConTecnicos}><AntDesign name="plus" size={20} color={profile.modoOscuro === true ? "black"  : "#FFFF"} /></TouchableOpacity>
+                                <TouchableOpacity style={styles.masTecnicos} onPress={acomodarArrayConTecnicos}><AntDesign name="plus" size={20} color={profile.modoOscuro === true ? "black" : "#FFFF"} /></TouchableOpacity>
                             </View>
                         </View>
                         <View>
@@ -684,7 +781,7 @@ const RegistrarTareasGestor = ({ navigation }) => {
                                             source={{ uri: tecnico.fotoPerfil }}
                                         />
                                         <View style={{ justifyContent: "center", paddingLeft: 10 }}>
-                                            <Text style={{ color: profile.modoOscuro ? "black" :  "white", fontWeight: "500", fontSize: 16 }}>
+                                            <Text style={{ color: profile.modoOscuro ? "black" : "white", fontWeight: "500", fontSize: 16 }}>
                                                 {`${tecnico.primerNombre} ${tecnico.segundoNombre} ${tecnico.primerApellido} ${tecnico.segundoApellido}`}
                                             </Text>
                                         </View>
@@ -707,7 +804,7 @@ const RegistrarTareasGestor = ({ navigation }) => {
                                             borderBottomRightRadius: 8,
                                         }}
                                     >
-                                        <AntDesign name="close" size={20} color={profile.modoOscuro === true ? "black" :  "#FFFF"} />
+                                        <AntDesign name="close" size={20} color={profile.modoOscuro === true ? "black" : "#FFFF"} />
                                     </TouchableOpacity>
                                 </View>
                             ))}
@@ -751,14 +848,13 @@ const styles = StyleSheet.create({
         fontWeight: 700,
     },
     containerInputs: {
-        marginTop: 10
+        marginTop: 2
     },
     labelClaro: {
         position: "absolute",
         left: 10,
         backgroundColor: "white",
         padding: 4,
-        backgroundColor: "white",
         zIndex: 200,
         fontWeight: 700,
         color: "#898C91",
@@ -767,7 +863,6 @@ const styles = StyleSheet.create({
     labelOscuro: {
         position: "absolute",
         left: 10,
-        backgroundColor: "white",
         padding: 4,
         backgroundColor: "#2C2C2C",
         zIndex: 200,
@@ -801,6 +896,7 @@ const styles = StyleSheet.create({
     descripcion: {
         height: 90,
         textAlignVertical: "top",
+        paddingTop: 15,
     },
     botonSumit: {
         backgroundColor: "#3D67CD",
@@ -824,7 +920,21 @@ const styles = StyleSheet.create({
         borderBottomRightRadius: 8,
         height: 60,
         justifyContent: "center"
-    }
+    },
+    containerTiposTarea: {
+        paddingVertical: 10,
+        gap: 10,
+    },
+    btnTiposTareaActivo: {
+        padding: 10,
+        borderRadius: 10,
+        backgroundColor: "#8BA7E6",
+    },
+    btnTiposTareaInactivo: {
+        padding: 10,
+        borderRadius: 10,
+        backgroundColor: "#acbadcff",
+    },
 });
 
 export default RegistrarTareasGestor

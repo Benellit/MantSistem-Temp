@@ -6,9 +6,9 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import axios from "axios";
 import * as ImagePicker from "expo-image-picker";
-import { addDoc, collection, doc, getDoc, getDocs, getFirestore, query, setDoc, updateDoc, where, arrayRemove } from "firebase/firestore";
+import { addDoc, arrayRemove, collection, doc, getDoc, getDocs, getFirestore, query, setDoc, updateDoc, where } from "firebase/firestore";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Alert, ActivityIndicator, Animated, Dimensions, FlatList, Image, Modal, PanResponder, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Animated, Dimensions, FlatList, Image, Modal, PanResponder, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Toast from 'react-native-toast-message';
 import appFirebase, { cloudinaryConfig } from '../../credenciales/Credenciales';
 import { useAuth } from "../login/AuthContext";
@@ -20,6 +20,7 @@ const TareaDetails = ({ route, navigation }) => {
     const db = getFirestore(appFirebase);
     const { profile } = useAuth();
     const { id, onGoBack } = route.params;
+    const flatListRef = useRef(null);
 
     const [loading, setLoading] = useState(true);
     const [tarea, setTarea] = useState([]);
@@ -35,11 +36,27 @@ const TareaDetails = ({ route, navigation }) => {
     const [fechaEntrega, setFechaEntrega] = useState("");
 
     const openModal = (imagenes, fecha, index) => {
-        setCarouselItems(imagenes || []);
-        setFechaEntrega(fecha);
-        setActiveIndex(index);
+        setCarouselItems(imagenes);
+        setActiveIndex(index);  // 👈 índice correcto
         setModalVisible(true);
     };
+
+
+    useEffect(() => {
+        carouselItems.forEach((uri) => {
+            Image.getSize(
+                uri,
+                (width, height) => {
+                    const aspectRatio = height / width;
+                    setHeights((prev) => ({
+                        ...prev,
+                        [uri]: windowWidth * aspectRatio, // ajusta altura manteniendo proporción
+                    }));
+                },
+                (error) => console.log("Error al obtener tamaño:", error)
+            );
+        });
+    }, [carouselItems]);
 
 
     const saveEvidencias = async (urls) => {
@@ -432,8 +449,8 @@ const TareaDetails = ({ route, navigation }) => {
 
                 if (tarea.estado === "Revisada") {
                     if (modalOupdate) {
-                        setTextoPrincipal("¿Deceas cambiar el estado de esta tarea a completada?");
-                        setTextoSecundario("Si lo cambias, ya no podrá cambiarlo.");
+                        setTextoPrincipal("¿Deceas cancelar la revisión?");
+                        setTextoSecundario("Si lo cambias, cambiara a completada.");
                         setVisibleModal(true);
                     } else {
                         await updateDoc(refTarea, { estado: "Completada" });
@@ -442,7 +459,7 @@ const TareaDetails = ({ route, navigation }) => {
                         Toast.show({
                             type: 'success',
                             text1: 'Revisión Cancelada',
-                            text2: '¡Asegurate de entregarla a tiempo!',
+                            text2: '¡Asegurate de Revisarla!',
                         });
                     }
                 }
@@ -919,11 +936,11 @@ const TareaDetails = ({ route, navigation }) => {
                     }}
                 >
                     <View style={styles.centeredView}>
-                        <View style={profile.modoOscuro === true ? styles.modalViewClaro : styles.modalViewOscuro}>
-                            <Text style={{ fontWeight: 500, fontSize: 16, color: profile.modoOscuro === true ? "black" : "white" }}>
+                        <View style={profile.modoOscuro === true ? styles.modalViewOscuro : styles.modalViewClaro}>
+                            <Text style={{ fontWeight: 500, fontSize: 16, color: profile.modoOscuro === true ? "white" : "black"}}>
                                 {textoPrincipal}
                             </Text>
-                            <Text style={{ color: profile.modoOscuro === true ? "black" : "white", fontSize: 14 }}>{textoSecundario}</Text>
+                            <Text style={{ color: profile.modoOscuro === true ? "white" : "black", fontSize: 14 }}>{textoSecundario}</Text>
                             <View style={{ flexDirection: "row", gap: 10, marginTop: 7 }}>
                                 <TouchableOpacity onPress={() => setVisibleModal(false)} style={{ flex: 1, backgroundColor: "red", paddingVertical: 10, borderRadius: 8, justifyContent: "center", alignItems: 'center' }}>
                                     <Text style={{ color: "white", fontWeight: "600" }}>No</Text>
@@ -960,20 +977,21 @@ const TareaDetails = ({ route, navigation }) => {
                             pagingEnabled
                             keyExtractor={(item, i) => i.toString()}
                             showsHorizontalScrollIndicator={false}
-                            onMomentumScrollEnd={(ev) => {
-                                const newIndex = Math.round(ev.nativeEvent.contentOffset.x / (windowWidth * 1));
-                                setActiveIndex(newIndex);
-                            }}
+                            initialScrollIndex={activeIndex}
+                            getItemLayout={(data, index) => ({
+                                length: windowWidth,
+                                offset: windowWidth * index,
+                                index,
+                            })}
                             renderItem={({ item }) => {
-                                if (!item) return null;
+                                const imageHeight = heights[item] || 200;
                                 return (
                                     <Image
                                         source={{ uri: item }}
                                         style={{
-                                            width: windowWidth * 1,
-                                            height: heights[item] || 300,
+                                            width: windowWidth,
+                                            height: imageHeight,
                                             borderRadius: 10,
-                                            marginHorizontal: 5,
                                         }}
                                         resizeMode="cover"
                                     />

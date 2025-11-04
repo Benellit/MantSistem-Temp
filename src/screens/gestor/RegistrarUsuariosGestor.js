@@ -1,3 +1,10 @@
+import AntDesign from "@expo/vector-icons/AntDesign";
+import Feather from "@expo/vector-icons/Feather";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import * as ImagePicker from "expo-image-picker";
+import { LinearGradient } from "expo-linear-gradient";
+import { createUserWithEmailAndPassword, getAuth } from "firebase/auth";
+import { collection, doc, getDocs, getFirestore, query, setDoc, where } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -11,13 +18,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import * as ImagePicker from "expo-image-picker";
-import { collection, doc, getDocs, getFirestore, query, setDoc, where } from "firebase/firestore";
-import { createUserWithEmailAndPassword, getAuth } from "firebase/auth";
 import appFirebase, { cloudinaryConfig } from "../../credenciales/Credenciales";
-import AntDesign from "@expo/vector-icons/AntDesign";
-import Ionicons from "@expo/vector-icons/Ionicons";
-import Feather from "@expo/vector-icons/Feather";
+import { useAuth } from "../login/AuthContext";
 
 const db = getFirestore(appFirebase);
 const auth = getAuth(appFirebase);
@@ -30,6 +32,7 @@ const RegistrarUsuariosGestor = ({ navigation }) => {
   const [showRolModal, setShowRolModal] = useState(false);
   const [showSucursalModal, setShowSucursalModal] = useState(false);
   const [showEstadoModal, setShowEstadoModal] = useState(false);
+  const { profile } = useAuth();
 
   const roles = ["Tecnico"];
   const estados = ["Activo", "Inactivo"];
@@ -333,295 +336,362 @@ const RegistrarUsuariosGestor = ({ navigation }) => {
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Registrar Usuario</Text>
-      </View>
+    <View style={{ flex: 1 }}>
+      <LinearGradient
+        colors={["#87aef0", "#9c8fc4"]}
+        start={{ x: 0.5, y: 0.4 }}
+        end={{ x: 0.5, y: 1 }}
+        style={{
+          height: 155,
+        }}
+      >
+        <View style={{ paddingTop: 40, paddingLeft: 10 }}>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 4 }}>
+              <Ionicons name="chevron-back" size={24} color={profile.modoOscuro === true ? "black" : "#FFFF"} />
+            </TouchableOpacity>
+          </View>
 
-      {/* Foto de perfil */}
-      <View style={styles.photoContainer}>
-        <View style={styles.photoWrapper}>
-          {formData.fotoPerfil ? (
-            <Image source={{ uri: formData.fotoPerfil }} style={styles.profilePhoto} />
-          ) : (
-            <View style={[styles.profilePhoto, styles.photoPlaceholder]}>
-              <AntDesign name="user" size={60} color="#999" />
-            </View>
-          )}
-
-          {uploadingImage && (
-            <View style={styles.uploadingOverlay}>
-              <ActivityIndicator size="large" color="#fff" />
-            </View>
-          )}
-        </View>
-
-        <TouchableOpacity
-          style={styles.addPhotoButton}
-          onPress={handleAddPhoto}
-          disabled={uploadingImage}
-        >
-          <Ionicons name="camera" size={20} color="#007AFF" />
-          <Text style={styles.addPhotoText}>
-            {formData.fotoPerfil ? "Cambiar foto" : "Agregar foto"}
+          <Text
+            style={{
+              color: profile.modoOscuro ? "#2C2C2C" : "white",
+              fontSize: 26,
+              fontWeight: "900",
+              marginTop: 5,
+              paddingLeft: 10,
+            }}
+          >
+            Registrar Usuario
           </Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Formulario */}
-      <View style={styles.form}>
-        <View style={styles.fieldContainer}>
-          <Text style={styles.label}>Primer Nombre *</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.primerNombre}
-            onChangeText={(text) => setFormData((prev) => ({ ...prev, primerNombre: text }))}
-            placeholder="Ingrese primer nombre"
-          />
         </View>
-
-        <View style={styles.fieldContainer}>
-          <Text style={styles.label}>Segundo Nombre</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.segundoNombre}
-            onChangeText={(text) => setFormData((prev) => ({ ...prev, segundoNombre: text }))}
-            placeholder="Ingrese segundo nombre"
-          />
-        </View>
-
-        <View style={styles.fieldContainer}>
-          <Text style={styles.label}>Primer Apellido *</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.primerApellido}
-            onChangeText={(text) => setFormData((prev) => ({ ...prev, primerApellido: text }))}
-            placeholder="Ingrese primer apellido"
-          />
-        </View>
-
-        <View style={styles.fieldContainer}>
-          <Text style={styles.label}>Segundo Apellido</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.segundoApellido}
-            onChangeText={(text) => setFormData((prev) => ({ ...prev, segundoApellido: text }))}
-            placeholder="Ingrese segundo apellido"
-          />
-        </View>
-
-        <View style={styles.fieldContainer}>
-          <Text style={styles.label}>Email *</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.email}
-            onChangeText={(text) => setFormData((prev) => ({ ...prev, email: text }))}
-            placeholder="ejemplo@correo.com"
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-        </View>
-
-        <View style={styles.fieldContainer}>
-          <Text style={styles.label}>Contraseña *</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.password}
-            onChangeText={(text) => setFormData((prev) => ({ ...prev, password: text }))}
-            placeholder="Mínimo 6 caracteres"
-            secureTextEntry
-          />
-        </View>
-
-        <View style={styles.fieldContainer}>
-          <Text style={styles.label}>Confirmar Contraseña *</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.confirmPassword}
-            onChangeText={(text) => setFormData((prev) => ({ ...prev, confirmPassword: text }))}
-            placeholder="Repita la contraseña"
-            secureTextEntry
-          />
-        </View>
-
-        <View style={styles.fieldContainer}>
-          <Text style={styles.label}>Teléfono</Text>
-          <TextInput
-            style={styles.input}
-            value={formData.numTel}
-            onChangeText={(text) => setFormData((prev) => ({ ...prev, numTel: text }))}
-            placeholder="663-123-4567"
-            keyboardType="phone-pad"
-          />
-        </View>
-
-        <View style={styles.fieldContainer}>
-          <Text style={styles.label}>Rol *</Text>
-          <TouchableOpacity
-            style={styles.selectButton}
-            onPress={() => setShowRolModal(true)}
-          >
-            <Text style={styles.selectButtonText}>{formData.rol}</Text>
-            <Feather name="chevron-down" size={20} color="#666" />
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.fieldContainer}>
-          <Text style={styles.label}>Sucursal *</Text>
-          <TouchableOpacity
-            style={styles.selectButton}
-            onPress={() => setShowSucursalModal(true)}
-          >
-            <Text style={styles.selectButtonText}>
-              {formData.sucursalNombre || "Seleccione una sucursal"}
-            </Text>
-            <Feather name="chevron-down" size={20} color="#666" />
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.fieldContainer}>
-          <Text style={styles.label}>Estado *</Text>
-          <TouchableOpacity
-            style={styles.selectButton}
-            onPress={() => setShowEstadoModal(true)}
-          >
-            <Text style={styles.selectButtonText}>{formData.estado}</Text>
-            <Feather name="chevron-down" size={20} color="#666" />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Botón de registro */}
-      <TouchableOpacity
-        style={[styles.registerButton, loading && styles.registerButtonDisabled]}
-        onPress={handleRegister}
-        disabled={loading}
-      >
-        {loading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <>
-            <Feather name="user-plus" size={20} color="#fff" />
-            <Text style={styles.registerButtonText}>Registrar Usuario</Text>
-          </>
-        )}
-      </TouchableOpacity>
-
-      <View style={{ height: 40 }} />
-
-      {/* Modal para seleccionar Rol */}
-      <Modal
-        visible={showRolModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowRolModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Seleccionar Rol</Text>
-            {roles.map((rol) => (
-              <TouchableOpacity
-                key={rol}
-                style={styles.modalOption}
-                onPress={() => {
-                  setFormData((prev) => ({ ...prev, rol }));
-                  setShowRolModal(false);
-                }}
-              >
-                <Text style={styles.modalOptionText}>{rol}</Text>
-                {formData.rol === rol && (
-                  <Feather name="check" size={20} color="#007AFF" />
+      </LinearGradient>
+      <View style={profile.modoOscuro === true ? styles.containerOscuro : styles.containerClaro}>
+        <ScrollView style={{ paddingHorizontal: 15, borderTopRightRadius: 35, borderTopLeftRadius: 35, paddingBottom: 0 }} nestedScrollEnabled={true}>
+          {/* Foto de perfil */}
+          <View style={{marginTop: 20}}>
+            <Text style={[styles.titulo, { color: profile.modoOscuro === true ? "white" : 'black' }]}>Datos personales</Text>
+            <View style={styles.photoContainer}>
+              <View style={styles.photoWrapper}>
+                {formData.fotoPerfil ? (
+                  <Image source={{ uri: formData.fotoPerfil }} style={styles.profilePhoto} />
+                ) : (
+                  <View style={[styles.profilePhoto, styles.photoPlaceholder]}>
+                    <AntDesign name="user" size={60} color="#999" />
+                  </View>
                 )}
-              </TouchableOpacity>
-            ))}
-            <TouchableOpacity
-              style={styles.modalCloseButton}
-              onPress={() => setShowRolModal(false)}
-            >
-              <Text style={styles.modalCloseButtonText}>Cancelar</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
 
-      {/* Modal para seleccionar Sucursal */}
-      <Modal
-        visible={showSucursalModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowSucursalModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Seleccionar Sucursal</Text>
-            <ScrollView style={styles.modalScroll}>
-              {sucursales.map((sucursal) => (
+                {uploadingImage && (
+                  <View style={styles.uploadingOverlay}>
+                    <ActivityIndicator size="large" color="#fff" />
+                  </View>
+                )}
+              </View>
+
+              <TouchableOpacity
+                style={styles.addPhotoButton}
+                onPress={handleAddPhoto}
+                disabled={uploadingImage}
+              >
+                <Ionicons name="camera" size={20} color="#007AFF" />
+                <Text style={styles.addPhotoText}>
+                  {formData.fotoPerfil ? "Cambiar foto" : "Agregar foto"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Formulario */}
+          <View>
+              <View style={styles.fieldContainer}>
+                <Text style={profile.modoOscuro === true ? styles.labelOscuro : styles.labelClaro}>Primer Nombre *</Text>
+                <TextInput
+                  style={profile.modoOscuro === true ? styles.inputOscuro : styles.inputClaro}
+                  value={formData.primerNombre}
+                  onChangeText={(text) => setFormData((prev) => ({ ...prev, primerNombre: text }))}
+                  placeholderTextColor={profile.modoOscuro ? "#D1D1D1" : "black"}
+                  placeholder="Ingrese primer nombre"
+                />
+              </View>
+
+              <View style={styles.fieldContainer}>
+                <Text style={profile.modoOscuro === true ? styles.labelOscuro : styles.labelClaro}>Segundo Nombre</Text>
+                <TextInput
+                  style={profile.modoOscuro === true ? styles.inputOscuro : styles.inputClaro}
+                  value={formData.segundoNombre}
+                  onChangeText={(text) => setFormData((prev) => ({ ...prev, segundoNombre: text }))}
+                  placeholderTextColor={profile.modoOscuro ? "#D1D1D1" : "black"}
+                  placeholder="Ingrese segundo nombre"
+                />
+              </View>
+
+              <View style={styles.fieldContainer}>
+                <Text style={profile.modoOscuro === true ? styles.labelOscuro : styles.labelClaro}>Primer Apellido *</Text>
+                <TextInput
+                  style={profile.modoOscuro === true ? styles.inputOscuro : styles.inputClaro}
+                  value={formData.primerApellido}
+                  onChangeText={(text) => setFormData((prev) => ({ ...prev, primerApellido: text }))}
+                  placeholderTextColor={profile.modoOscuro ? "#D1D1D1" : "black"}
+                  placeholder="Ingrese primer apellido"
+                />
+              </View>
+
+              <View style={styles.fieldContainer}>
+                <Text style={profile.modoOscuro === true ? styles.labelOscuro : styles.labelClaro}>Segundo Apellido</Text>
+                <TextInput
+                  style={profile.modoOscuro === true ? styles.inputOscuro : styles.inputClaro}
+                  value={formData.segundoApellido}
+                  onChangeText={(text) => setFormData((prev) => ({ ...prev, segundoApellido: text }))}
+                  placeholderTextColor={profile.modoOscuro ? "#D1D1D1" : "black"}
+                  placeholder="Ingrese segundo apellido"
+                />
+              </View>
+
+              <View style={styles.fieldContainer}>
+                <Text style={profile.modoOscuro === true ? styles.labelOscuro : styles.labelClaro}>Contraseña *</Text>
+                <TextInput
+                  style={profile.modoOscuro === true ? styles.inputOscuro : styles.inputClaro}
+                  value={formData.password}
+                  onChangeText={(text) => setFormData((prev) => ({ ...prev, password: text }))}
+                  placeholderTextColor={profile.modoOscuro ? "#D1D1D1" : "black"}
+                  placeholder="Mínimo 6 caracteres"
+                  secureTextEntry
+                />
+              </View>
+
+              <View style={styles.fieldContainer}>
+                <Text style={profile.modoOscuro === true ? styles.labelOscuro : styles.labelClaro}>Confirmar Contraseña *</Text>
+                <TextInput
+                  style={profile.modoOscuro === true ? styles.inputOscuro : styles.inputClaro}
+                  value={formData.confirmPassword}
+                  onChangeText={(text) => setFormData((prev) => ({ ...prev, confirmPassword: text }))}
+                  placeholderTextColor={profile.modoOscuro ? "#D1D1D1" : "black"}
+                  placeholder="Repita la contraseña"
+                  secureTextEntry
+                />
+              </View>
+
+            <View style={{ marginTop: 20 }}>
+              <Text style={[styles.titulo, { color: profile.modoOscuro === true ? "white" : 'black' }]}>Datos de contacto</Text>
+              <View style={styles.fieldContainer}>
+                <Text style={profile.modoOscuro === true ? styles.labelOscuro : styles.labelClaro}>Email *</Text>
+                <TextInput
+                  style={profile.modoOscuro === true ? styles.inputOscuro : styles.inputClaro}
+                  value={formData.email}
+                  onChangeText={(text) => setFormData((prev) => ({ ...prev, email: text }))}
+                  placeholderTextColor={profile.modoOscuro ? "#D1D1D1" : "black"}
+                  placeholder="ejemplo@correo.com"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+              </View>
+
+              <View style={styles.fieldContainer}>
+                <Text style={profile.modoOscuro === true ? styles.labelOscuro : styles.labelClaro}>Teléfono</Text>
+                <TextInput
+                  style={profile.modoOscuro === true ? styles.inputOscuro : styles.inputClaro}
+                  value={formData.numTel}
+                  onChangeText={(text) => setFormData((prev) => ({ ...prev, numTel: text }))}
+                  placeholderTextColor={profile.modoOscuro ? "#D1D1D1" : "black"}
+                  placeholder="663-123-4567"
+                  keyboardType="phone-pad"
+                />
+              </View>
+            </View>
+
+            <View style={{ marginTop: 20 }}>
+              <Text style={[styles.titulo, { color: profile.modoOscuro === true ? "white" : 'black' }]}>Información del sistema</Text>
+              <View style={{ flexDirection: "row", gap: 10 }}>
+                <View style={styles.fieldContainer}>
+                  <Text style={profile.modoOscuro === true ? styles.labelOscuro : styles.labelClaro}>Rol *</Text>
+                  <TouchableOpacity
+                    style={profile.modoOscuro === true ? styles.inputOscuro : styles.inputClaro}
+                    onPress={() => setShowRolModal(true)}
+                  >
+                    <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                      <View>
+                        <Text style={profile.modoOscuro === true ? styles.selectButtonTextOscuro : styles.selectButtonTextClaro}>{formData.rol}</Text>
+                      </View>
+                      <View style={{ marginRight: 10 }}>
+                        <Feather name="chevron-down" size={20} color="#666" />
+                      </View>
+                    </View>
+
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.fieldContainer}>
+                  <Text style={profile.modoOscuro === true ? styles.labelOscuro : styles.labelClaro}>Estado *</Text>
+                  <TouchableOpacity
+                    style={profile.modoOscuro === true ? styles.inputOscuro : styles.inputClaro}
+                    onPress={() => setShowEstadoModal(true)}
+                  >
+                    <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                      <View>
+                        <Text style={profile.modoOscuro === true ? styles.selectButtonTextOscuro : styles.selectButtonTextClaro}>{formData.estado}</Text>
+                      </View>
+                      <View style={{ marginRight: 10 }}>
+                        <Feather name="chevron-down" size={20} color="#666" />
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.fieldContainer}>
+              <Text style={profile.modoOscuro === true ? styles.labelOscuro : styles.labelClaro}>Sucursal *</Text>
+              <TouchableOpacity
+                style={profile.modoOscuro === true ? styles.inputOscuro : styles.inputClaro}
+                onPress={() => setShowSucursalModal(true)}
+              >
+                <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                  <View>
+                    <Text style={profile.modoOscuro === true ? styles.selectButtonTextOscuro : styles.selectButtonTextClaro}>
+                      {formData.sucursalNombre || "Seleccione una sucursal"}
+                    </Text>
+                  </View>
+                  <View style={{ marginRight: 10 }}>
+                    <Feather name="chevron-down" size={20} color="#666" />
+                  </View>
+                </View>
+
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Botón de registro */}
+          <TouchableOpacity
+            style={[styles.registerButton, loading && styles.registerButtonDisabled]}
+            onPress={handleRegister}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color={profile.modoOscuro ? "#FFF" : "black"} />
+            ) : (
+              <>
+                <Feather name="user-plus" size={20} color="#fff" />
+                <Text style={profile.modoOscuro === true ? { color: "black", fontWeight: 800, fontSize: 20, marginLeft: 8 } : { color: 'white', fontWeight: 800, fontSize: 20, marginLeft: 8 }}>Registrar Usuario</Text>
+              </>
+            )}
+          </TouchableOpacity>
+
+          <View style={{ height: 40 }} />
+
+          {/* Modal para seleccionar Rol */}
+          <Modal
+            visible={showRolModal}
+            transparent
+            animationType="slide"
+            onRequestClose={() => setShowRolModal(false)}
+          >
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>Seleccionar Rol</Text>
+                {roles.map((rol) => (
+                  <TouchableOpacity
+                    key={rol}
+                    style={styles.modalOption}
+                    onPress={() => {
+                      setFormData((prev) => ({ ...prev, rol }));
+                      setShowRolModal(false);
+                    }}
+                  >
+                    <Text style={styles.modalOptionText}>{rol}</Text>
+                    {formData.rol === rol && (
+                      <Feather name="check" size={20} color="#007AFF" />
+                    )}
+                  </TouchableOpacity>
+                ))}
                 <TouchableOpacity
-                  key={sucursal.id}
-                  style={styles.modalOption}
-                  onPress={() => {
-                    setFormData((prev) => ({
-                      ...prev,
-                      IDSucursal: sucursal.id,
-                      sucursalNombre: sucursal.nombre || sucursal.id,
-                    }));
-                    setShowSucursalModal(false);
-                  }}
+                  style={styles.modalCloseButton}
+                  onPress={() => setShowRolModal(false)}
                 >
-                  <Text style={styles.modalOptionText}>
-                    {sucursal.nombre || sucursal.id}
-                  </Text>
-                  {formData.IDSucursal === sucursal.id && (
-                    <Feather name="check" size={20} color="#007AFF" />
-                  )}
+                  <Text style={styles.modalCloseButtonText}>Cancelar</Text>
                 </TouchableOpacity>
-              ))}
-            </ScrollView>
-            <TouchableOpacity
-              style={styles.modalCloseButton}
-              onPress={() => setShowSucursalModal(false)}
-            >
-              <Text style={styles.modalCloseButtonText}>Cancelar</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+              </View>
+            </View>
+          </Modal>
 
-      {/* Modal para seleccionar Estado */}
-      <Modal
-        visible={showEstadoModal}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowEstadoModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Seleccionar Estado</Text>
-            {estados.map((estado) => (
-              <TouchableOpacity
-                key={estado}
-                style={styles.modalOption}
-                onPress={() => {
-                  setFormData((prev) => ({ ...prev, estado }));
-                  setShowEstadoModal(false);
-                }}
-              >
-                <Text style={styles.modalOptionText}>{estado}</Text>
-                {formData.estado === estado && (
-                  <Feather name="check" size={20} color="#007AFF" />
-                )}
-              </TouchableOpacity>
-            ))}
-            <TouchableOpacity
-              style={styles.modalCloseButton}
-              onPress={() => setShowEstadoModal(false)}
-            >
-              <Text style={styles.modalCloseButtonText}>Cancelar</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-    </ScrollView>
+          {/* Modal para seleccionar Sucursal */}
+          <Modal
+            visible={showSucursalModal}
+            transparent
+            animationType="slide"
+            onRequestClose={() => setShowSucursalModal(false)}
+          >
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>Seleccionar Sucursal</Text>
+                <ScrollView style={styles.modalScroll}>
+                  {sucursales.map((sucursal) => (
+                    <TouchableOpacity
+                      key={sucursal.id}
+                      style={styles.modalOption}
+                      onPress={() => {
+                        setFormData((prev) => ({
+                          ...prev,
+                          IDSucursal: sucursal.id,
+                          sucursalNombre: sucursal.nombre || sucursal.id,
+                        }));
+                        setShowSucursalModal(false);
+                      }}
+                    >
+                      <Text style={styles.modalOptionText}>
+                        {sucursal.nombre || sucursal.id}
+                      </Text>
+                      {formData.IDSucursal === sucursal.id && (
+                        <Feather name="check" size={20} color="#007AFF" />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+                <TouchableOpacity
+                  style={styles.modalCloseButton}
+                  onPress={() => setShowSucursalModal(false)}
+                >
+                  <Text style={styles.modalCloseButtonText}>Cancelar</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
+
+          {/* Modal para seleccionar Estado */}
+          <Modal
+            visible={showEstadoModal}
+            transparent
+            animationType="slide"
+            onRequestClose={() => setShowEstadoModal(false)}
+          >
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>Seleccionar Estado</Text>
+                {estados.map((estado) => (
+                  <TouchableOpacity
+                    key={estado}
+                    style={styles.modalOption}
+                    onPress={() => {
+                      setFormData((prev) => ({ ...prev, estado }));
+                      setShowEstadoModal(false);
+                    }}
+                  >
+                    <Text style={styles.modalOptionText}>{estado}</Text>
+                    {formData.estado === estado && (
+                      <Feather name="check" size={20} color="#007AFF" />
+                    )}
+                  </TouchableOpacity>
+                ))}
+                <TouchableOpacity
+                  style={styles.modalCloseButton}
+                  onPress={() => setShowEstadoModal(false)}
+                >
+                  <Text style={styles.modalCloseButtonText}>Cancelar</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
+        </ScrollView>
+      </View>
+    </View>
   );
 };
 
@@ -636,25 +706,32 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#f5f5f5",
   },
+  containerClaro: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    borderTopRightRadius: 35,
+    borderTopLeftRadius: 35,
+    marginTop: -30,
+    paddingBottom: 0,
+    marginBottom: 0,
+  },
+  containerOscuro: {
+    flex: 1,
+    backgroundColor: "#2C2C2C",
+    borderTopRightRadius: 35,
+    borderTopLeftRadius: 35,
+    marginTop: -30,
+    paddingBottom: 0,
+    marginBottom: 0,
+  },
   loadingText: {
     marginTop: 10,
     fontSize: 16,
     color: "#666",
   },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 60,
-    paddingBottom: 20,
-    backgroundColor: "#fff",
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#333",
-  },
   photoContainer: {
     alignItems: "center",
-    marginVertical: 30,
+    marginVertical: 10,
   },
   photoWrapper: {
     position: "relative",
@@ -683,39 +760,70 @@ const styles = StyleSheet.create({
   addPhotoButton: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 15,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
+    marginTop: 5,
+    paddingVertical: 5,
+    paddingHorizontal: 12,
     backgroundColor: "#f0f0f0",
     borderRadius: 20,
   },
   addPhotoText: {
     marginLeft: 8,
-    fontSize: 14,
+    fontSize: 12,
     color: "#007AFF",
     fontWeight: "600",
   },
-  form: {
-    backgroundColor: "#fff",
-    paddingHorizontal: 20,
-    paddingTop: 20,
+  titulo: {
+    fontSize: 18,
+    fontWeight: 700,
   },
   fieldContainer: {
-    marginBottom: 20,
+    marginTop: 10,
+    flex: 1,
   },
-  label: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#333",
-    marginBottom: 8,
+  labelClaro: {
+    position: "absolute",
+    left: 10,
+    backgroundColor: "white",
+    padding: 4,
+    backgroundColor: "white",
+    zIndex: 200,
+    fontWeight: 700,
+    color: "#898C91",
+    fontSize: 16
   },
-  input: {
+  labelOscuro: {
+    position: "absolute",
+    left: 10,
+    backgroundColor: "white",
+    padding: 4,
+    backgroundColor: "#2C2C2C",
+    zIndex: 200,
+    fontWeight: 700,
+    color: "#b4b8c0ff",
+    fontSize: 16
+  },
+  inputClaro: {
+    color: "black",
+    marginTop: 15,
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: "#D9D9D9",
     borderRadius: 8,
-    padding: 12,
+    paddingLeft: 12,
+    height: 60,
+    justifyContent: "center",
+    fontSize: 16
+  },
+  inputOscuro: {
+    color: "white",
+    marginTop: 15,
+    borderWidth: 1,
+    borderColor: "#D9D9D9",
+    borderRadius: 8,
+    paddingLeft: 12,
+    height: 60,
+    justifyContent: "center",
     fontSize: 16,
-    backgroundColor: "#fff",
+    backgroundColor: "#2C2C2C",
   },
   selectButton: {
     flexDirection: "row",
@@ -727,28 +835,24 @@ const styles = StyleSheet.create({
     padding: 12,
     backgroundColor: "#fff",
   },
-  selectButtonText: {
+  selectButtonTextOscuro: {
     fontSize: 16,
-    color: "#333",
+    color: "#D1D1D1" ,
+  },
+  selectButtonTextClaro: {
+    fontSize: 16,
+    color: "black",
   },
   registerButton: {
     flexDirection: "row",
-    backgroundColor: "#28a745",
-    marginHorizontal: 20,
-    marginTop: 30,
-    padding: 16,
-    borderRadius: 8,
+    backgroundColor: "#3D67CD",
+    height: 60,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 13,
     alignItems: "center",
     justifyContent: "center",
-  },
-  registerButtonDisabled: {
-    opacity: 0.6,
-  },
-  registerButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-    marginLeft: 8,
+    marginTop: 20,
   },
   modalOverlay: {
     flex: 1,

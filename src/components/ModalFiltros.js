@@ -111,15 +111,15 @@ const ModalFiltros = ({ open, setOpenFiltros, setFiltros, filtros }) => {
                 }}
             >
                 <View style={styles.centeredView}>
-                    <View style={profile.modoOscuro === true ? styles.modalViewClaro : styles.modalViewOscuro}>
+                    <View style={profile.modoOscuro === true ? styles.modalViewOscuro : styles.modalViewClaro}>
                         <View style={{ alignItems: "flex-end" }}>
                             <TouchableOpacity style={{ justifyContent: "center", padding: 4, borderWidth: 1, borderRadius: 8, borderColor: "#D9D9D9" }} onPress={() => setOpenFiltros(false)}>
-                                <AntDesign name="close" size={24} color={profile.modoOscuro ? "black" : "white"} />
+                                <AntDesign name="close" size={24} color={profile.modoOscuro ? "white" : "black"} />
                             </TouchableOpacity>
                         </View>
                         {profile.rol == "Administrador" &&
                             <View style={styles.containerInputs}>
-                                <Text style={[profile.modoOscuro === true ? styles.labelClaro : styles.labelOscuro, { zIndex: 400 }]}>Sucursal</Text>
+                                <Text style={[profile.modoOscuro === true ? styles.labelOscuro : styles.labelClaro, { zIndex: 400 }]}>Sucursal</Text>
                                 <DropDownPicker
                                     open={openSucursal}
                                     value={valueSucursal}
@@ -128,36 +128,36 @@ const ModalFiltros = ({ open, setOpenFiltros, setFiltros, filtros }) => {
                                     setValue={setValueSucursal}
                                     setItems={setSucursal}
                                     placeholder="Selecciona sucursal"
-                                    style={profile.modoOscuro === true ? styles.inputClaro : styles.inputOscuro}
+                                    style={profile.modoOscuro === true ? styles.inputOscuro :  styles.inputClaro}
                                     listMode="SCROLLVIEW"
                                     dropDownContainerStyle={{
                                         borderColor: "#F2F3F5",
                                         borderWidth: 2,
-                                        backgroundColor: profile.modoOscuro ? "white" : "#2C2C2C",
+                                        backgroundColor: profile.modoOscuro ? "#2C2C2C" :  "white",
                                         borderRadius: 8,
                                     }}
                                     placeholderStyle={{
-                                        color: profile.modoOscuro ? "black" : "#D1D1D1",
+                                        color: profile.modoOscuro ? "#D1D1D1" : "black",
                                         fontSize: 16,
                                     }}
                                     textStyle={{
-                                        color: profile.modoOscuro ? "black" : "#D1D1D1",
+                                        color: profile.modoOscuro ? "#D1D1D1" : "black",
                                         fontSize: 16,
                                     }}
                                     zIndex={399}
                                     zIndexInverse={400}
                                     ArrowDownIconComponent={() => (
-                                        <MaterialIcons name="keyboard-arrow-down" size={24} color={profile.modoOscuro ? "black" : "white"} />
+                                        <MaterialIcons name="keyboard-arrow-down" size={24} color={profile.modoOscuro ? "white" : "black"} />
                                     )}
                                     ArrowUpIconComponent={() => (
-                                        <MaterialIcons name="keyboard-arrow-down" size={24} color={profile.modoOscuro ? "black" : "white"} />
+                                        <MaterialIcons name="keyboard-arrow-down" size={24} color={profile.modoOscuro ? "white" : "black"} />
                                     )}
                                     onOpen={handleOpenSucursal}
                                 />
                             </View>}
 
                         <View style={styles.containerInputs}>
-                            <Text style={[profile.modoOscuro === true ? styles.labelClaro : styles.labelOscuro, { zIndex: 350 }]}>Estado</Text>
+                            <Text style={[profile.modoOscuro === true ? styles.labelOscuro : styles.labelClaro, { zIndex: 350 }]}>Estado</Text>
                             <DropDownPicker
                                 open={openEstado}
                                 value={valueEstado}
@@ -166,35 +166,35 @@ const ModalFiltros = ({ open, setOpenFiltros, setFiltros, filtros }) => {
                                 setValue={setValueEstado}
                                 setItems={setEstado}
                                 placeholder="Selecciona estado"
-                                style={profile.modoOscuro === true ? styles.inputClaro : styles.inputOscuro}
+                                style={profile.modoOscuro === true ? styles.inputOscuro : styles.inputClaro}
                                 listMode="SCROLLVIEW"
                                 dropDownContainerStyle={{
                                     borderColor: "#F2F3F5",
                                     borderWidth: 2,
-                                    backgroundColor: profile.modoOscuro ? "white" : "#2C2C2C",
+                                    backgroundColor: profile.modoOscuro ? "#2C2C2C" : "white",
                                     borderRadius: 8,
                                 }}
                                 placeholderStyle={{
-                                    color: profile.modoOscuro ? "black" : "#D1D1D1",
+                                    color: profile.modoOscuro ? "#D1D1D1" : "black",
                                     fontSize: 16,
                                 }}
                                 textStyle={{
-                                    color: profile.modoOscuro ? "black" : "#D1D1D1",
+                                    color: profile.modoOscuro ? "#D1D1D1" : "black",
                                     fontSize: 16,
                                 }}
                                 zIndex={340}
                                 zIndexInverse={350}
                                 ArrowDownIconComponent={() => (
-                                    <MaterialIcons name="keyboard-arrow-down" size={24} color={profile.modoOscuro ? "black" : "white"} />
+                                    <MaterialIcons name="keyboard-arrow-down" size={24} color={profile.modoOscuro ? "white" : "black"} />
                                 )}
                                 ArrowUpIconComponent={() => (
-                                    <MaterialIcons name="keyboard-arrow-down" size={24} color={profile.modoOscuro ? "black" : "white"} />
+                                    <MaterialIcons name="keyboard-arrow-down" size={24} color={profile.modoOscuro ? "white" : "black"} />
                                 )}
                                 onOpen={handleOpenEstado}
                             />
                         </View>
                         <View style={styles.containerInputs}>
-                            <Text style={[profile.modoOscuro === true ? styles.labelClaro : styles.labelOscuro, { zIndex: 320 }]}>Prioridad</Text>
+                            <Text style={[profile.modoOscuro === true ? styles.labelOscuro : styles.labelClaro, { zIndex: 320 }]}>Prioridad</Text>
                             <DropDownPicker
                                 open={openPrioridad}
                                 value={valuePrioridad}
@@ -203,29 +203,29 @@ const ModalFiltros = ({ open, setOpenFiltros, setFiltros, filtros }) => {
                                 setValue={setValuePrioridad}
                                 setItems={setPrioridad}
                                 placeholder="Selecciona prioridad"
-                                style={profile.modoOscuro === true ? styles.inputClaro : styles.inputOscuro}
+                                style={profile.modoOscuro === true ? styles.inputOscuro : styles.inputClaro}
                                 listMode="SCROLLVIEW"
                                 dropDownContainerStyle={{
                                     borderColor: "#F2F3F5",
                                     borderWidth: 2,
-                                    backgroundColor: profile.modoOscuro ? "white" : "#2C2C2C",
+                                    backgroundColor: profile.modoOscuro ? "#2C2C2C" : "white",
                                     borderRadius: 8,
                                 }}
                                 placeholderStyle={{
-                                    color: profile.modoOscuro ? "black" : "#D1D1D1",
+                                    color: profile.modoOscuro ? "#D1D1D1" : "black",
                                     fontSize: 16,
                                 }}
                                 textStyle={{
-                                    color: profile.modoOscuro ? "black" : "#D1D1D1",
+                                    color: profile.modoOscuro ? "#D1D1D1" : "black",
                                     fontSize: 16,
                                 }}
                                 zIndex={100}
                                 zIndexInverse={200}
                                 ArrowDownIconComponent={() => (
-                                    <MaterialIcons name="keyboard-arrow-down" size={24} color={profile.modoOscuro ? "black" : "white"} />
+                                    <MaterialIcons name="keyboard-arrow-down" size={24} color={profile.modoOscuro ? "white" : "black"} />
                                 )}
                                 ArrowUpIconComponent={() => (
-                                    <MaterialIcons name="keyboard-arrow-down" size={24} color={profile.modoOscuro ? "black" : "white"} />
+                                    <MaterialIcons name="keyboard-arrow-down" size={24} color={profile.modoOscuro ? "white" : "black"} />
                                 )}
                                 onOpen={handleOpenPrioridad}
                             />
@@ -254,7 +254,7 @@ const ModalFiltros = ({ open, setOpenFiltros, setFiltros, filtros }) => {
                                 }}
 
                             >
-                                <Text style={profile.modoOscuro ? { color: 'white', fontWeight: 800, fontSize: 15 } : { color: "#b4b3b3ff", fontWeight: 800, fontSize: 15 }}>
+                                <Text style={profile.modoOscuro ? { color: "#b4b3b3ff", fontWeight: 800, fontSize: 15 } : { color: 'white', fontWeight: 800, fontSize: 15 }}>
                                     Aplicar Filtros
                                 </Text>
                             </TouchableOpacity>
@@ -265,7 +265,7 @@ const ModalFiltros = ({ open, setOpenFiltros, setFiltros, filtros }) => {
                                     setOpenFiltros(false);
                                 }}
                             >
-                                <Text style={profile.modoOscuro ? { color: 'white', fontWeight: 800, fontSize: 15 } : { color: "#b4b3b3ff", fontWeight: 800, fontSize: 15 }}>
+                                <Text style={profile.modoOscuro ? { color: "#b4b3b3ff", fontWeight: 800, fontSize: 15 } : { color: 'white', fontWeight: 800, fontSize: 15 }}>
                                     Quitar Filtros
                                 </Text>
                             </TouchableOpacity>

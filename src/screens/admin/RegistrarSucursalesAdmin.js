@@ -11,7 +11,7 @@ const db = getFirestore(appFirebase);
 const RegistrarSucursalesAdmin = ({ navigation }) => {
     const { profile } = useAuth();
     const [loading, setLoading] = useState(false);
-    
+
     // Estados para los campos del formulario
     const [nombre, setNombre] = useState("");
     const [dirCalle, setDirCalle] = useState("");
@@ -49,7 +49,7 @@ const RegistrarSucursalesAdmin = ({ navigation }) => {
 
         try {
             setLoading(true);
-            
+
             const nuevaSucursal = {
                 nombre: nombre.trim(),
                 dirCalle: dirCalle.trim(),
@@ -87,47 +87,51 @@ const RegistrarSucursalesAdmin = ({ navigation }) => {
     };
 
     return (
-        <LinearGradient
-            colors={["#87aef0", "#9c8fc4"]}
-            start={{ x: 0.5, y: 0.4 }}
-            end={{ x: 0.5, y: 1 }}
-            style={{ flex: 1 }}
-        >
-            <KeyboardAvoidingView 
-                style={{ flex: 1 }} 
+        <View style={{ flex: 1 }}>
+            <LinearGradient
+                colors={["#87aef0", "#9c8fc4"]}
+                start={{ x: 0.5, y: 0.4 }}
+                end={{ x: 0.5, y: 1 }}
+                style={{
+                    height: 155,
+                }}
+            >
+                <View style={{ paddingTop: 40, paddingLeft: 10 }}>
+                    <View style={{ flexDirection: "row", alignItems: "center" }}>
+                        <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 4 }}>
+                            <Ionicons name="chevron-back" size={24} color={profile.modoOscuro === true ? "black" : "#FFFF"} />
+                        </TouchableOpacity>
+                    </View>
+
+                    <Text
+                        style={{
+                            color: profile.modoOscuro ? "#2C2C2C" : "white",
+                            fontSize: 26,
+                            fontWeight: "900",
+                            marginTop: 5,
+                            paddingLeft: 10,
+                        }}
+                    >
+                        Agregar Sucursal
+                    </Text>
+                </View>
+            </LinearGradient>
+
+            <KeyboardAvoidingView
+                style={profile.modoOscuro === true ? styles.containerOscuro : styles.containerClaro}
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
             >
-                {/* Header */}
-                <View style={profile.modoOscuro === true ? styles.headerClaro : styles.headerOscuro}>
-                    <View style={styles.headerContent}>
-                        <TouchableOpacity 
-                            onPress={() => navigation.goBack()}
-                            style={styles.backButton}
-                        >
-                            <Ionicons 
-                                name="arrow-back" 
-                                size={24} 
-                                color={profile.modoOscuro === true ? "black" : "white"} 
-                            />
-                        </TouchableOpacity>
-                        <Text style={profile.modoOscuro === true ? styles.tituloClaro : styles.tituloOscuro}>
-                            Nueva Sucursal
-                        </Text>
-                    </View>
-                </View>
-
-                <ScrollView 
+                <ScrollView
                     style={styles.container}
-                    contentContainerStyle={styles.scrollContent}
                     keyboardShouldPersistTaps="handled"
                 >
                     <View style={styles.formContainer}>
+                        <Text style={[styles.titulo, { paddingTop: 20 }, { color: profile.modoOscuro === true ? "white" : 'black' }]}>Datos de registro                    </Text>
                         {/* Icono principal */}
                         <View style={styles.iconHeader}>
                             <View style={styles.iconCircle}>
                                 <Ionicons name="business" size={50} color="#87aef0" />
                             </View>
-                            <Text style={styles.subtitulo}>Registra una nueva sucursal</Text>
                         </View>
 
                         {/* Campo: Nombre */}
@@ -203,29 +207,38 @@ const RegistrarSucursalesAdmin = ({ navigation }) => {
                                 {loading ? "Registrando..." : "Registrar Sucursal"}
                             </Text>
                         </TouchableOpacity>
-
-                        {/* Botón Cancelar */}
-                        <TouchableOpacity
-                            style={styles.buttonSecondary}
-                            onPress={() => navigation.goBack()}
-                            disabled={loading}
-                            activeOpacity={0.8}
-                        >
-                            <Text style={styles.buttonSecondaryText}>Cancelar</Text>
-                        </TouchableOpacity>
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>
-        </LinearGradient>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
+    containerClaro: {
+        flex: 1,
+        backgroundColor: "#FFFFFF",
+        borderTopRightRadius: 35,
+        borderTopLeftRadius: 35,
+        marginTop: -30,
+        paddingBottom: 0,
+        marginBottom: 0,
+    },
+    containerOscuro: {
+        flex: 1,
+        backgroundColor: "#2C2C2C",
+        borderTopRightRadius: 35,
+        borderTopLeftRadius: 35,
+        marginTop: -30,
+        paddingBottom: 0,
+        marginBottom: 0,
+    },
+    titulo: {
+        fontSize: 18,
+        fontWeight: 700,
+    },
     container: {
         flex: 1,
-    },
-    scrollContent: {
-        padding: 20,
     },
     headerClaro: {
         paddingTop: 15,
@@ -238,7 +251,6 @@ const styles = StyleSheet.create({
         shadowRadius: 5,
         elevation: 6,
         borderBottomWidth: 2,
-        borderColor: "#D9D9D9"
     },
     headerOscuro: {
         paddingTop: 15,
@@ -275,12 +287,12 @@ const styles = StyleSheet.create({
     formContainer: {
         backgroundColor: "white",
         borderRadius: 20,
-        padding: 20,
+        paddingHorizontal: 15,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
         shadowRadius: 8,
-        elevation: 5,
+        paddingTop: 10,
     },
     iconHeader: {
         alignItems: "center",

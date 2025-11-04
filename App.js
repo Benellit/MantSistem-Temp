@@ -43,13 +43,13 @@ const SuccessToast = (props) => {
       {...props}
       style={{
         borderLeftColor: '#4CAF50',
-        backgroundColor: profile?.modoOscuro ? 'white' : '#2C2C2C',
+        backgroundColor: profile?.modoOscuro ? '#2C2C2C' : 'white',
       }}
       contentContainerStyle={{ paddingHorizontal: 15 }}
       text1Style={{
         fontSize: 15,
         fontWeight: 'bold',
-        color: profile?.modoOscuro ? '#4CAF50' : '#2e7d32',
+        color: profile?.modoOscuro ? '#2e7d32' : '#4CAF50',
       }}
       text2Style={{
         fontSize: 14,
@@ -127,64 +127,21 @@ function AppStack() {
         component={RegistrarTareasGestor}
         options={{
           headerShown: false
-          // header: ({ navigation, back }) => (
-          //   <LinearGradient
-          //     colors={["#87aef0", "#9c8fc4"]}
-          //     start={{ x: 0.5, y: 0.4 }}
-          //     end={{ x: 0.5, y: 1 }}
-          //     style={{
-          //       height: 120,
-          //       paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 40,
-          //       paddingHorizontal: 10,
-          //       paddingVertical: 10,
-          //       justifyContent: "center",
-          //     }}
-          //   >
-          //     <View style={{ flexDirection: "row", alignItems: "center" }}>
-          //       {back && (
-          //         <TouchableOpacity onPress={navigation.goBack} style={{ padding: 4 }}>
-          //           <Ionicons name="chevron-back" size={24} color={profile.modoOscuro === true ? "#FFFFFF" : "#2C2C2C"} />
-          //         </TouchableOpacity>
-          //       )}
-          //     </View>
-          //     <Text style={profile.modoOscuro === true ? { color: "#FFFFFF", fontSize: 26, fontWeight: 900, paddingLeft: 10, paddingBottom: 20 } : { color: "#2C2C2C", fontSize: 26, fontWeight: 900, paddingLeft: 10, paddingBottom: 20 }}>
-          //       Agregar Tarea
-          //     </Text>
-          //   </LinearGradient>
-          // ),
         }}
       />
       <Stack.Screen
         name="RegistrarSucursales"
         component={RegistrarSucursalesAdmin}
-        options={({ route }) => ({
-        headerTitle: "",
-        headerStyle: {
-          backgroundColor: profile.modoOscuro ? "#101826" : "#FFFFFF", // card
-          height: 80,
-        },
-        headerTintColor: profile.modoOscuro ? "#E5E7EB" : "#1F2937",   // text
-        headerTitleStyle: {
-          color: profile.modoOscuro ? "#E5E7EB" : "#1F2937",
-        },
-        headerShadowVisible: true,
-      })}
+        options={{
+          headerShown: false
+        }}
       />
       <Stack.Screen
         name="RegistrarUsuarios"
         component={RegistrarUsuariosGestor}
-        options={({ route }) => ({
-        headerTitle: "",
-        headerStyle: {
-          backgroundColor: profile.modoOscuro ? "#101826" : "#FFFFFF", // card
-          height: 80,
-        },
-        headerTintColor: profile.modoOscuro ? "#E5E7EB" : "#1F2937",   // text
-        headerTitleStyle: {
-          color: profile.modoOscuro ? "#E5E7EB" : "#1F2937",
-        },
-        headerShadowVisible: true,
-      })}
+        options={{
+          headerShown: false
+        }}
       />
       <Stack.Screen
         name="TareaDetails"
