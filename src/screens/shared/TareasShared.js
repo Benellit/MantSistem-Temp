@@ -171,7 +171,12 @@ export default function TareasShared({ navigation }) {
                 })
             );
 
-            tareasConTodo.sort((a, b) => b.fechaCreacion.toMillis() - a.fechaCreacion.toMillis());
+            tareasConTodo.sort((a, b) => {
+                const fechaA = a.fechaCreacion?.toMillis ? a.fechaCreacion.toMillis() : 0;
+                const fechaB = b.fechaCreacion?.toMillis ? b.fechaCreacion.toMillis() : 0;
+                return fechaB - fechaA;
+            });
+
             setTareas(tareasConTodo);
 
         } catch (error) {
@@ -299,7 +304,7 @@ export default function TareasShared({ navigation }) {
                 {/* Header */}
                 <View style={profile.modoOscuro === true ? styles.headerOscuro : styles.headerClaro}>
                     <View>
-                        <Text style={profile.modoOscuro === true ? styles.tituloOscuro : styles.tituloClaro }>Tareas</Text>
+                        <Text style={profile.modoOscuro === true ? styles.tituloOscuro : styles.tituloClaro}>Tareas</Text>
                     </View>
                     <View style={{ flexDirection: "row", gap: 10, marginBottom: 5 }}>
                         <View style={{ marginBottom: 0, marginVertical: 5, flex: 1 }}>
@@ -360,7 +365,7 @@ export default function TareasShared({ navigation }) {
                             style={profile.modoOscuro ? styles.cardsTareasOscuro : styles.cardsTareasClaro}
                         >
                             <View>
-                                <Text style={profile.modoOscuro ? styles.tituloCardOscuro :  styles.tituloCardClaro}>
+                                <Text style={profile.modoOscuro ? styles.tituloCardOscuro : styles.tituloCardClaro}>
                                     {tarea.nombre}
                                 </Text>
 
@@ -393,13 +398,13 @@ export default function TareasShared({ navigation }) {
                                     {/* 📸 Reportes y evidencias */}
                                     <View style={{ flexDirection: 'row', gap: 10 }}>
                                         <View style={{ flexDirection: "row", gap: 6 }}>
-                                            <Feather name="camera" size={18} color={profile.modoOscuro ?  "#EDEDED" : "#353335"} />
+                                            <Feather name="camera" size={18} color={profile.modoOscuro ? "#EDEDED" : "#353335"} />
                                             <Text style={profile.modoOscuro ? styles.numerosOscuro : styles.numerosClaro}>
                                                 {tarea.totalFotografias}
                                             </Text>
                                         </View>
                                         <View style={{ flexDirection: "row", gap: 6 }}>
-                                            <AntDesign name="book" size={18} color={profile.modoOscuro ? "#EDEDED" :  "#353335"} />
+                                            <AntDesign name="book" size={18} color={profile.modoOscuro ? "#EDEDED" : "#353335"} />
                                             <Text style={profile.modoOscuro ? styles.numerosOscuro : styles.numerosClaro}>
                                                 {tarea.totalReportes}
                                             </Text>
@@ -410,7 +415,7 @@ export default function TareasShared({ navigation }) {
                                 {/* 👨‍🔧 Técnicos */}
                                 <View style={{ flexDirection: "row", justifyContent: "space-between", alignContent: "center" }}>
                                     <View style={{ flexDirection: "row", gap: 7 }}>
-                                        <Feather name="calendar" size={20} color={profile.modoOscuro ?  "#EDEDED" : "#353335"} />
+                                        <Feather name="calendar" size={20} color={profile.modoOscuro ? "#EDEDED" : "#353335"} />
                                         <Text style={profile.modoOscuro ? styles.fechaOscuro : styles.fechaClaro}>
                                             {formatFecha(tarea.fechaCreacion)} - {formatFecha(tarea.fechaEntrega)}
                                         </Text>

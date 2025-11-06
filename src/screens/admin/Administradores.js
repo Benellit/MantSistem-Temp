@@ -174,13 +174,13 @@ const UsuariosGestor = ({ navigation }) => {
                                     opacity: refreshing ? 0.6 : 1,
                                 }}
                             >
-                                <FontAwesome6 name="magnifying-glass" size={16} color={profile.modoOscuro ? '#FFFF' : 'black'} />
+                                <FontAwesome6 name="magnifying-glass" size={16} color={profile.modoOscuro ? 'black' : '#FFFF'} />
                             </TouchableOpacity>
                         </View>
 
                         <View style={{ marginTop: 5, justifyContent: 'center', alignContent: 'center' }}>
                             <TouchableOpacity style={styles.opciones} onPress={() => { /* abrir filtros si aplica */ }}>
-                                <Ionicons name="options-outline" size={24} color={profile.modoOscuro ? '#FFFF' : 'black'} />
+                                <Ionicons name="options-outline" size={24} color={profile.modoOscuro ? 'black' : '#FFFF'} />
                             </TouchableOpacity>
                         </View>
                     </View>

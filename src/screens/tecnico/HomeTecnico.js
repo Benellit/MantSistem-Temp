@@ -11,8 +11,7 @@ export default function HomeTecnico({ navigation }) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: 20,
         paddingTop: 50,
-        backgroundColor: "gray"
+        padding: 20,
     }
 });

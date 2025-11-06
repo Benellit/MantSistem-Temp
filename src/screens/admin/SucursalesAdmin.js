@@ -193,15 +193,10 @@ export default function SucursalesAdmin({ navigation }) {
                   opacity: refreshing ? 0.6 : 1,
                 }}
               >
-                <FontAwesome6 name="magnifying-glass" size={16} color={profile.modoOscuro ? '#FFFF' : 'black'} />
+                <FontAwesome6 name="magnifying-glass" size={16} color={profile.modoOscuro ?  'black' : '#FFFF'} />
               </TouchableOpacity>
             </View>
 
-            <View style={{ marginTop: 5, justifyContent: 'center', alignContent: 'center' }}>
-              <TouchableOpacity style={[styles.opciones, { backgroundColor: '#87aef0' }]} onPress={() => { /* filtros opcionales */ }}>
-                <Ionicons name="options-outline" size={24} color={profile.modoOscuro ? '#FFFF' : 'black'} />
-              </TouchableOpacity>
-            </View>
           </View>
         </View>
 
@@ -257,7 +252,7 @@ export default function SucursalesAdmin({ navigation }) {
 
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
 
-                      <Ionicons name="chevron-forward" size={20} color={profile.modoOscuro ? "#A1A6AD" : "#6B7280"} />
+                      {/* <Ionicons name="chevron-forward" size={20} color={profile.modoOscuro ? "#A1A6AD" : "#6B7280"} /> */}
                     </View>
                   </View>
 
@@ -288,7 +283,7 @@ export default function SucursalesAdmin({ navigation }) {
                       <View style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>
                         <Ionicons name="location-outline" size={18} color={C.iconMain} />
                         <Text style={{ fontSize: 14, color: C.info, flex: 1 }}>
-                          {(s.dirCalle || "Calle")} {(s.dirColonia ? `, ${s.dirColonia}` : "")}
+                          {(s.dirCalle || "Calle")} {(s.dirColonia?`, ${s.dirColonia}` : "")}
                         </Text>
                       </View>
                       <View style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>
