@@ -25,11 +25,11 @@ import UsuariosGestor from "./src/screens/gestor/UsuariosGestor";
 // Técnico
 import HomeTecnico from "./src/screens/tecnico/HomeTecnico";
 // Shared
-import PerfilUsuarioShared from './src/screens/shared/PerfilUsuarioShared';
-import EditTarea from './src/screens/admin/EditTarea';
 import PerfilShared from "./src/screens/shared/PerfilShared";
+import PerfilUsuarioShared from './src/screens/shared/PerfilUsuarioShared';
 import TareaDetails from './src/screens/shared/TareaDetails';
 import TareasShared from "./src/screens/shared/TareasShared";
+import EditarTareas from './src/screens/shared/EditarTareas';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -94,7 +94,7 @@ function Gate() {
       </View>
     );
   }
-    return (
+  return (
     <>
       {user ? <AppStack /> : <AuthStack />}
       <Toast config={toastConfig} />
@@ -150,6 +150,13 @@ function AppStack() {
           headerShown: false
         }}
       />
+      <Stack.Screen
+        name="EditarTareas"
+        component={EditarTareas}
+        options={{
+          headerShown: false
+        }}
+      />
       <Stack.Screen name="Tareas" component={TareasShared}
         options={{
           headerShown: false
@@ -159,11 +166,6 @@ function AppStack() {
         name="PerfilUsuarioShared"
         component={PerfilUsuarioShared}
         options={{ headerShown: false }} // o true si quieres header
-      />
-      <Stack.Screen name="EditTarea" component={EditTarea}
-        options={{
-          headerShown: false
-        }}
       />
     </Stack.Navigator>
   );
@@ -185,12 +187,8 @@ function AdminScreens() {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         tabBarStyle: {
-        backgroundColor: profile.modoOscuro === true ? "#2C2C2C" : "white",
-        borderTopWidth: 1,
-        borderColor: "#D9D9D9",
-        elevation: 20,
-        shadowOpacity: 20,
-      },
+          backgroundColor: profile.modoOscuro === true ? "#1A1A1A" : "white",
+        },
         headerShown: false,
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
@@ -218,7 +216,7 @@ function AdminScreens() {
           return <Ionicons name={iconName} size={size} color={color} />;
         },
         tabBarActiveTintColor: '#4C7BFF',
-        tabBarInactiveTintColor: profile.modoOscuro ? "#A1A6AD" : "#6B7280",
+        tabBarInactiveTintColor: profile.modoOscuro ? "white" : "#6B7280",
       })}
     >
       <Tab.Screen name="Home" component={HomeAdmin} />
@@ -236,12 +234,8 @@ function GestorScreens() {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         tabBarStyle: {
-        backgroundColor: profile.modoOscuro ? "#171A1E" : "#FFFFFF",
-        borderTopWidth: 1,
-        borderColor: profile.modoOscuro ? "rgba(255,255,255,0.10)" : "#E5E7EB",
-        elevation: 20,
-        shadowOpacity: 20,
-      },
+          backgroundColor: profile.modoOscuro ? "#1A1A1A" : "#FFFFFF",
+        },
         headerShown: false,
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;
@@ -276,12 +270,8 @@ function TecnicoScreens() {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         tabBarStyle: {
-        backgroundColor: profile.modoOscuro ? "#171A1E" : "#FFFFFF",
-        borderTopWidth: 1,
-        borderColor: profile.modoOscuro ? "rgba(255,255,255,0.10)" : "#E5E7EB",
-        elevation: 20,
-        shadowOpacity: 20,
-      },
+          backgroundColor: profile.modoOscuro ? "#1A1A1A" : "#FFFFFF",
+        },
         headerShown: false,
         tabBarIcon: ({ focused, color, size }) => {
           let iconName;

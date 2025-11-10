@@ -6,7 +6,7 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-nati
 import appFirebase from '../../credenciales/Credenciales';
 import { useAuth } from "../login/AuthContext";
 
-const EditTarea = ({ route, navigation }) => {
+const EditarTarea = ({ route, navigation }) => {
     const db = getFirestore(appFirebase);
     const { profile } = useAuth();
     const { id } = route.params;
@@ -79,7 +79,7 @@ const EditTarea = ({ route, navigation }) => {
                             paddingLeft: 10,
                         }}
                     >
-                        Editar Tarea
+                        Editar Tareas
                     </Text>
                 </View>
             </LinearGradient>
@@ -143,4 +143,4 @@ const styles = StyleSheet.create({
     },
 })
 
-export default EditTarea
+export default EditarTarea

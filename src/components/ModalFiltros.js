@@ -33,26 +33,26 @@ const ModalFiltros = ({ open, setOpenFiltros, setFiltros, filtros }) => {
     }, []);
 
     useEffect(() => {
-    obtenerSucursales();
+        obtenerSucursales();
 
-    // Inicializar valores según filtros actuales
-    if (filtros) {
-        if (profile.rol === "Administrador") {
-            setValueSucursal(filtros.sucursal || null);
-        } else if (profile.rol === "Gestor" || profile.rol === "Tecnico") {
-            // Sucursal del usuario
-            if (profile.IDSucursal) {
-                const sucursalId = typeof profile.IDSucursal === "string"
-                    ? profile.IDSucursal.split("/").pop()
-                    : profile.IDSucursal.id;
-                setValueSucursal(sucursalId);
+        // Inicializar valores según filtros actuales
+        if (filtros) {
+            if (profile.rol === "Administrador") {
+                setValueSucursal(filtros.sucursal || null);
+            } else if (profile.rol === "Gestor" || profile.rol === "Tecnico") {
+                // Sucursal del usuario
+                if (profile.IDSucursal) {
+                    const sucursalId = typeof profile.IDSucursal === "string"
+                        ? profile.IDSucursal.split("/").pop()
+                        : profile.IDSucursal.id;
+                    setValueSucursal(sucursalId);
+                }
             }
-        }
 
-        setValuePrioridad(filtros.prioridad || null);
-        setValueEstado(filtros.estado || null);
-    }
-}, [filtros]);
+            setValuePrioridad(filtros.prioridad || null);
+            setValueEstado(filtros.estado || null);
+        }
+    }, [filtros]);
 
     useEffect(() => {
         if (sucursal.length && (profile.rol === "Gestor" || profile.rol === "Tecnico")) {
@@ -128,29 +128,37 @@ const ModalFiltros = ({ open, setOpenFiltros, setFiltros, filtros }) => {
                                     setValue={setValueSucursal}
                                     setItems={setSucursal}
                                     placeholder="Selecciona sucursal"
-                                    style={profile.modoOscuro === true ? styles.inputOscuro :  styles.inputClaro}
+                                    style={profile.modoOscuro === true ? styles.inputOscuro : styles.inputClaro}
                                     listMode="SCROLLVIEW"
                                     dropDownContainerStyle={{
-                                        borderColor: "#F2F3F5",
+                                        borderColor: profile.modoOscuro ? "#555555" : "#F2F3F5",
                                         borderWidth: 2,
-                                        backgroundColor: profile.modoOscuro ? "#2C2C2C" :  "white",
+                                        backgroundColor: profile.modoOscuro ? "#1a1a1a" : "white",
                                         borderRadius: 8,
                                     }}
                                     placeholderStyle={{
-                                        color: profile.modoOscuro ? "#D1D1D1" : "black",
+                                        color: profile.modoOscuro ? "#888888" : "#999999",
                                         fontSize: 16,
                                     }}
                                     textStyle={{
-                                        color: profile.modoOscuro ? "#D1D1D1" : "black",
+                                        color: profile.modoOscuro ? "#FFFFFF" : "#000000",
                                         fontSize: 16,
                                     }}
                                     zIndex={399}
                                     zIndexInverse={400}
                                     ArrowDownIconComponent={() => (
-                                        <MaterialIcons name="keyboard-arrow-down" size={24} color={profile.modoOscuro ? "white" : "black"} />
+                                        <MaterialIcons
+                                            name="keyboard-arrow-down"
+                                            size={24}
+                                            color={profile.modoOscuro ? "#FFFFFF" : "#000000"}
+                                        />
                                     )}
                                     ArrowUpIconComponent={() => (
-                                        <MaterialIcons name="keyboard-arrow-down" size={24} color={profile.modoOscuro ? "white" : "black"} />
+                                        <MaterialIcons
+                                            name="keyboard-arrow-up"
+                                            size={24}
+                                            color={profile.modoOscuro ? "#FFFFFF" : "#000000"}
+                                        />
                                     )}
                                     onOpen={handleOpenSucursal}
                                 />
@@ -169,26 +177,34 @@ const ModalFiltros = ({ open, setOpenFiltros, setFiltros, filtros }) => {
                                 style={profile.modoOscuro === true ? styles.inputOscuro : styles.inputClaro}
                                 listMode="SCROLLVIEW"
                                 dropDownContainerStyle={{
-                                    borderColor: "#F2F3F5",
+                                    borderColor: profile.modoOscuro ? "#555555" : "#F2F3F5",
                                     borderWidth: 2,
-                                    backgroundColor: profile.modoOscuro ? "#2C2C2C" : "white",
+                                    backgroundColor: profile.modoOscuro ? "#1a1a1a" : "white",
                                     borderRadius: 8,
                                 }}
                                 placeholderStyle={{
-                                    color: profile.modoOscuro ? "#D1D1D1" : "black",
+                                    color: profile.modoOscuro ? "#888888" : "#999999",
                                     fontSize: 16,
                                 }}
                                 textStyle={{
-                                    color: profile.modoOscuro ? "#D1D1D1" : "black",
+                                    color: profile.modoOscuro ? "#FFFFFF" : "#000000",
                                     fontSize: 16,
                                 }}
                                 zIndex={340}
                                 zIndexInverse={350}
                                 ArrowDownIconComponent={() => (
-                                    <MaterialIcons name="keyboard-arrow-down" size={24} color={profile.modoOscuro ? "white" : "black"} />
+                                    <MaterialIcons
+                                        name="keyboard-arrow-down"
+                                        size={24}
+                                        color={profile.modoOscuro ? "#FFFFFF" : "#000000"}
+                                    />
                                 )}
                                 ArrowUpIconComponent={() => (
-                                    <MaterialIcons name="keyboard-arrow-down" size={24} color={profile.modoOscuro ? "white" : "black"} />
+                                    <MaterialIcons
+                                        name="keyboard-arrow-up"
+                                        size={24}
+                                        color={profile.modoOscuro ? "#FFFFFF" : "#000000"}
+                                    />
                                 )}
                                 onOpen={handleOpenEstado}
                             />
@@ -206,26 +222,34 @@ const ModalFiltros = ({ open, setOpenFiltros, setFiltros, filtros }) => {
                                 style={profile.modoOscuro === true ? styles.inputOscuro : styles.inputClaro}
                                 listMode="SCROLLVIEW"
                                 dropDownContainerStyle={{
-                                    borderColor: "#F2F3F5",
+                                    borderColor: profile.modoOscuro ? "#555555" : "#F2F3F5",
                                     borderWidth: 2,
-                                    backgroundColor: profile.modoOscuro ? "#2C2C2C" : "white",
+                                    backgroundColor: profile.modoOscuro ? "#1a1a1a" : "white",
                                     borderRadius: 8,
                                 }}
                                 placeholderStyle={{
-                                    color: profile.modoOscuro ? "#D1D1D1" : "black",
+                                    color: profile.modoOscuro ? "#888888" : "#999999",
                                     fontSize: 16,
                                 }}
                                 textStyle={{
-                                    color: profile.modoOscuro ? "#D1D1D1" : "black",
+                                    color: profile.modoOscuro ? "#FFFFFF" : "#000000",
                                     fontSize: 16,
                                 }}
                                 zIndex={100}
                                 zIndexInverse={200}
                                 ArrowDownIconComponent={() => (
-                                    <MaterialIcons name="keyboard-arrow-down" size={24} color={profile.modoOscuro ? "white" : "black"} />
+                                    <MaterialIcons
+                                        name="keyboard-arrow-down"
+                                        size={24}
+                                        color={profile.modoOscuro ? "#FFFFFF" : "#000000"}
+                                    />
                                 )}
                                 ArrowUpIconComponent={() => (
-                                    <MaterialIcons name="keyboard-arrow-down" size={24} color={profile.modoOscuro ? "white" : "black"} />
+                                    <MaterialIcons
+                                        name="keyboard-arrow-up"
+                                        size={24}
+                                        color={profile.modoOscuro ? "#FFFFFF" : "#000000"}
+                                    />
                                 )}
                                 onOpen={handleOpenPrioridad}
                             />
@@ -326,36 +350,28 @@ const styles = StyleSheet.create({
         position: "absolute",
         left: 10,
         backgroundColor: "white",
-        padding: 4,
-        backgroundColor: "white",
+        paddingVertical: 4,
+        paddingHorizontal: 6,
         zIndex: 200,
-        fontWeight: 700,
+        fontWeight: "700",
         color: "#898C91",
-        fontSize: 16
+        fontSize: 16,
+        borderRadius: 8
     },
     labelOscuro: {
         position: "absolute",
         left: 10,
-        padding: 4,
+        paddingVertical: 4,
+        paddingHorizontal: 6,
         backgroundColor: "#2C2C2C",
         zIndex: 200,
-        fontWeight: 700,
-        color: "#b4b8c0ff",
-        fontSize: 16
+        fontWeight: "700",
+        color: "#CCCCCC",
+        fontSize: 16,
+        borderRadius: 8
     },
     inputClaro: {
-        color: "black",
-        marginTop: 15,
-        borderWidth: 1,
-        borderColor: "#D9D9D9",
-        borderRadius: 8,
-        paddingLeft: 12,
-        height: 60,
-        justifyContent: "center",
-        fontSize: 16
-    },
-    inputOscuro: {
-        color: "white",
+        color: "#000000",
         marginTop: 15,
         borderWidth: 1,
         borderColor: "#D9D9D9",
@@ -364,7 +380,19 @@ const styles = StyleSheet.create({
         height: 60,
         justifyContent: "center",
         fontSize: 16,
-        backgroundColor: "#2C2C2C",
+        backgroundColor: "#FFFFFF",
+    },
+    inputOscuro: {
+        color: "#FFFFFF",
+        marginTop: 15,
+        borderWidth: 1,
+        borderColor: "#555555",
+        borderRadius: 8,
+        paddingLeft: 12,
+        height: 60,
+        justifyContent: "center",
+        fontSize: 16,
+        backgroundColor: "#1a1a1a",
     },
     containerInputs: {
         marginTop: 10,
