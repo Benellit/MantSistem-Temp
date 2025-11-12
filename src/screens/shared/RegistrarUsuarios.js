@@ -4,7 +4,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
 import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc, collection, getDocs, getFirestore } from "firebase/firestore";
+import { doc, setDoc, collection, getDocs, getFirestore, serverTimestamp } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -47,7 +47,10 @@ const RegistrarUsuariosGestor = ({ navigation }) => {
   const isGestor = profile?.rol === "Gestor";
   const isAdmin = profile?.rol === "Administrador";
 
-  const roles = ["Tecnico"];
+  const roles = isAdmin
+  ? ["Administrador", "Gestor", "Tecnico"]
+  : ["Tecnico"];
+
   const estados = ["Activo", "Inactivo"];
 
   const [formData, setFormData] = useState({
@@ -85,6 +88,26 @@ const RegistrarUsuariosGestor = ({ navigation }) => {
 
     loadSucursales();
   }, []);
+
+  useEffect(() => {
+  if (!profile) return;
+
+  // Si es Gestor, prellenamos sucursal (id + nombre) y la "congelamos" en el estado del form
+  if (isGestor) {
+    const gestorSucId = extractSucursalId(profile?.IDSucursal);
+    if (!gestorSucId) return;
+
+    // Intentamos resolver el nombre usando la lista de sucursales cargada
+    const found = sucursales.find(s => s.id === gestorSucId);
+    const nombre = found?.nombre || gestorSucId;
+
+    setFormData(prev => ({
+      ...prev,
+      IDSucursal: gestorSucId,
+      sucursalNombre: nombre,
+    }));
+  }
+}, [profile, isGestor, sucursales]);
 
   // Función para subir imagen a Cloudinary
   const uploadImageToCloudinary = async (uri) => {
@@ -277,11 +300,11 @@ const RegistrarUsuariosGestor = ({ navigation }) => {
         email: emailLimpio,
         numTel: (numTel || "").trim(),
         fotoPerfil: fotoPerfil || "",
-        rol: "Tecnico",
+        rol: formData.rol || "Tecnico",
         IDSucursal: doc(db, "SUCURSAL", sucursalId),
         estado,
         modoOscuro: false,
-        fechaRegistro: new Date(),
+        fechaRegistro: serverTimestamp(),
       mustChangePassword: true,
       });
 
@@ -293,20 +316,22 @@ const RegistrarUsuariosGestor = ({ navigation }) => {
             text: "OK",
             onPress: () => {
               // Resetear formulario
-              setFormData({
-                primerNombre: "",
-                segundoNombre: "",
-                primerApellido: "",
-                segundoApellido: "",
-                email: "",
-                numTel: "",
-                fotoPerfil: "",
-                rol: "Tecnico",
-                IDSucursal: null,
-                sucursalNombre: "",
-              estado: "Activo",
-              modoOscuro: false,
-            });
+              setFormData(prev => ({
+            primerNombre: "",
+            segundoNombre: "",
+            primerApellido: "",
+            segundoApellido: "",
+            email: "",
+            numTel: "",
+            fotoPerfil: "",
+            rol: "Tecnico",
+            IDSucursal: isGestor ? prev.IDSucursal : null,
+            sucursalNombre: isGestor ? prev.sucursalNombre : "",
+            estado: "Activo",
+            modoOscuro: false,
+          }));
+
+
             // Navegar atrás si es necesario
             if (navigation?.goBack) {
               navigation.goBack();
@@ -485,22 +510,32 @@ const RegistrarUsuariosGestor = ({ navigation }) => {
               <Text style={[styles.titulo, { color: profile.modoOscuro === true ? "white" : 'black' }]}>Información del sistema</Text>
               <View style={{ flexDirection: "row", gap: 10 }}>
                 <View style={styles.fieldContainer}>
-                  <Text style={profile.modoOscuro === true ? styles.labelOscuro : styles.labelClaro}>Rol *</Text>
+                <Text style={profile.modoOscuro ? styles.labelOscuro : styles.labelClaro}>Rol *</Text>
+
+                {isAdmin ? (
+                  // 🧭 ADMIN puede abrir modal y elegir rol
                   <TouchableOpacity
-                    style={profile.modoOscuro === true ? styles.inputOscuro : styles.inputClaro}
+                    style={profile.modoOscuro ? styles.inputOscuro : styles.inputClaro}
                     onPress={() => setShowRolModal(true)}
                   >
                     <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                      <View>
-                        <Text style={profile.modoOscuro === true ? styles.selectButtonTextOscuro : styles.selectButtonTextClaro}>{formData.rol}</Text>
-                      </View>
-                      <View style={{ marginRight: 10 }}>
-                        <Feather name="chevron-down" size={20} color="#666" />
-                      </View>
+                      <Text style={profile.modoOscuro ? styles.selectButtonTextOscuro : styles.selectButtonTextClaro}>
+                        {formData.rol || "Seleccione un rol"}
+                      </Text>
+                      <Feather name="chevron-down" size={20} color="#666" />
                     </View>
-
                   </TouchableOpacity>
-                </View>
+                ) : (
+                  // 🧩 GESTOR solo lo ve (sin modal)
+                  <View style={profile.modoOscuro ? styles.inputOscuro : styles.inputClaro}>
+                    <Text style={profile.modoOscuro ? styles.selectButtonTextOscuro : styles.selectButtonTextClaro}>
+                      {formData.rol}
+                    </Text>
+                  </View>
+                )}
+              </View>
+
+
 
                 <View style={styles.fieldContainer}>
                   <Text style={profile.modoOscuro === true ? styles.labelOscuro : styles.labelClaro}>Estado *</Text>
@@ -521,25 +556,37 @@ const RegistrarUsuariosGestor = ({ navigation }) => {
               </View>
             </View>
 
-            <View style={styles.fieldContainer}>
-              <Text style={profile.modoOscuro === true ? styles.labelOscuro : styles.labelClaro}>Sucursal *</Text>
-              <TouchableOpacity
-                style={profile.modoOscuro === true ? styles.inputOscuro : styles.inputClaro}
-                onPress={() => setShowSucursalModal(true)}
-              >
-                <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                  <View>
-                    <Text style={profile.modoOscuro === true ? styles.selectButtonTextOscuro : styles.selectButtonTextClaro}>
-                      {formData.sucursalNombre || "Seleccione una sucursal"}
-                    </Text>
-                  </View>
-                  <View style={{ marginRight: 10 }}>
-                    <Feather name="chevron-down" size={20} color="#666" />
-                  </View>
-                </View>
-
-              </TouchableOpacity>
+            {isAdmin ? (
+        <View style={styles.fieldContainer}>
+          <Text style={profile.modoOscuro ? styles.labelOscuro : styles.labelClaro}>Sucursal *</Text>
+          <TouchableOpacity
+            style={profile.modoOscuro ? styles.inputOscuro : styles.inputClaro}
+            onPress={() => setShowSucursalModal(true)}
+          >
+            <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+              <View>
+                <Text style={profile.modoOscuro ? styles.selectButtonTextOscuro : styles.selectButtonTextClaro}>
+                  {formData.sucursalNombre || "Seleccione una sucursal"}
+                </Text>
+              </View>
+              <View style={{ marginRight: 10 }}>
+                <Feather name="chevron-down" size={20} color="#666" />
+              </View>
             </View>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        // Gestor: sólo lectura (sin modal)
+        <View style={styles.fieldContainer}>
+          <Text style={profile.modoOscuro ? styles.labelOscuro : styles.labelClaro}>Sucursal *</Text>
+          <View style={profile.modoOscuro ? styles.inputOscuro : styles.inputClaro}>
+            <Text style={profile.modoOscuro ? styles.selectButtonTextOscuro : styles.selectButtonTextClaro}>
+              {formData.sucursalNombre || "Cargando sucursal..."}
+            </Text>
+          </View>
+        </View>
+      )}
+
           </View>
 
           {/* Botón de registro */}
@@ -560,40 +607,46 @@ const RegistrarUsuariosGestor = ({ navigation }) => {
 
           <View style={{ height: 40 }} />
 
-          {/* Modal para seleccionar Rol */}
-          <Modal
-            visible={showRolModal}
-            transparent
-            animationType="slide"
-            onRequestClose={() => setShowRolModal(false)}
-          >
-            <View style={styles.modalOverlay}>
-              <View style={styles.modalContent}>
-                <Text style={styles.modalTitle}>Seleccionar Rol</Text>
-                {roles.map((rol) => (
-                  <TouchableOpacity
-                    key={rol}
-                    style={styles.modalOption}
-                    onPress={() => {
-                      setFormData((prev) => ({ ...prev, rol }));
-                      setShowRolModal(false);
-                    }}
-                  >
-                    <Text style={styles.modalOptionText}>{rol}</Text>
-                    {formData.rol === rol && (
-                      <Feather name="check" size={20} color="#007AFF" />
-                    )}
-                  </TouchableOpacity>
-                ))}
+          {/* Modal para seleccionar Rol (solo Admin) */}
+      {isAdmin && (
+        <Modal
+          visible={showRolModal}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setShowRolModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Seleccionar Rol</Text>
+
+              {roles.map((rol) => (
                 <TouchableOpacity
-                  style={styles.modalCloseButton}
-                  onPress={() => setShowRolModal(false)}
+                  key={rol}
+                  style={styles.modalOption}
+                  onPress={() => {
+                    setFormData((prev) => ({ ...prev, rol }));
+                    setShowRolModal(false);
+                  }}
                 >
-                  <Text style={styles.modalCloseButtonText}>Cancelar</Text>
+                  <Text style={styles.modalOptionText}>{rol}</Text>
+                  {formData.rol === rol && (
+                    <Feather name="check" size={20} color="#007AFF" />
+                  )}
                 </TouchableOpacity>
-              </View>
+              ))}
+
+              <TouchableOpacity
+                style={styles.modalCloseButton}
+                onPress={() => setShowRolModal(false)}
+              >
+                <Text style={styles.modalCloseButtonText}>Cancelar</Text>
+              </TouchableOpacity>
             </View>
-          </Modal>
+          </View>
+        </Modal>
+      )}
+
+          
 
           {/* Modal para seleccionar Sucursal */}
           <Modal
