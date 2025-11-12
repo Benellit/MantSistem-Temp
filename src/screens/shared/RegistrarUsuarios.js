@@ -359,7 +359,7 @@ const RegistrarUsuariosGestor = ({ navigation }) => {
 
           <Text
             style={{
-              color: profile.modoOscuro ? "#2C2C2C" : "white",
+              color: profile.modoOscuro ? "#ffffffff" : "white",
               fontSize: 26,
               fontWeight: "900",
               marginTop: 5,
@@ -521,34 +521,25 @@ const RegistrarUsuariosGestor = ({ navigation }) => {
               </View>
             </View>
 
-           {!isAdmin ? (
-              <View style={{ marginTop: 8 }}>
-                <Text style={{ fontWeight: '700', color: profile?.modoOscuro ? '#D1D5DB' : '#374151' }}>Sucursal</Text>
-                <Text style={{ marginTop: 4, color: profile?.modoOscuro ? '#A1A6AD' : '#6B7280' }}>
-                  Se asignará automáticamente a tu sucursal.
-                </Text>
-              </View>
-            ) : (
-              <View style={styles.fieldContainer}>
-                <Text style={profile.modoOscuro === true ? styles.labelOscuro : styles.labelClaro}>Sucursal *</Text>
-                <TouchableOpacity
-                  style={profile.modoOscuro === true ? styles.inputOscuro : styles.inputClaro}
-                  onPress={() => setShowSucursalModal(true)}
-                >
-                  <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                    <View>
-                      <Text style={profile.modoOscuro === true ? styles.selectButtonTextOscuro : styles.selectButtonTextClaro}>
-                        {formData.sucursalNombre || "Seleccione una sucursal"}
-                      </Text>
-                    </View>
-                    <View style={{ marginRight: 10 }}>
-                      <Feather name="chevron-down" size={20} color="#666" />
-                    </View>
+            <View style={styles.fieldContainer}>
+              <Text style={profile.modoOscuro === true ? styles.labelOscuro : styles.labelClaro}>Sucursal *</Text>
+              <TouchableOpacity
+                style={profile.modoOscuro === true ? styles.inputOscuro : styles.inputClaro}
+                onPress={() => setShowSucursalModal(true)}
+              >
+                <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                  <View>
+                    <Text style={profile.modoOscuro === true ? styles.selectButtonTextOscuro : styles.selectButtonTextClaro}>
+                      {formData.sucursalNombre || "Seleccione una sucursal"}
+                    </Text>
                   </View>
+                  <View style={{ marginRight: 10 }}>
+                    <Feather name="chevron-down" size={20} color="#666" />
+                  </View>
+                </View>
 
-                </TouchableOpacity>
-              </View>
-            )}
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Botón de registro */}
@@ -562,7 +553,7 @@ const RegistrarUsuariosGestor = ({ navigation }) => {
             ) : (
               <>
                 <Feather name="user-plus" size={20} color="#fff" />
-                <Text style={profile.modoOscuro === true ? { color: "black", fontWeight: 800, fontSize: 20, marginLeft: 8 } : { color: 'white', fontWeight: 800, fontSize: 20, marginLeft: 8 }}>Registrar Usuario</Text>
+                <Text style={profile.modoOscuro === true ? { color: "white", fontWeight: 800, fontSize: 20, marginLeft: 8 } : { color: 'white', fontWeight: 800, fontSize: 20, marginLeft: 8 }}>Registrar Usuario</Text>
               </>
             )}
           </TouchableOpacity>

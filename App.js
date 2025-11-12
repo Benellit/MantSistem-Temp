@@ -22,7 +22,7 @@ import SucursalesAdmin from "./src/screens/admin/SucursalesAdmin";
 // Gestor
 import HomeGestor from "./src/screens/gestor/HomeGestor";
 import RegistrarTareasGestor from "./src/screens/gestor/RegistrarTareasGestor";
-import RegistrarUsuariosGestor from "./src/screens/gestor/RegistrarUsuariosGestor";
+import RegistrarUsuarios from "./src/screens/shared/RegistrarUsuarios";
 import UsuariosGestor from "./src/screens/gestor/UsuariosGestor";
 // Técnico
 import HomeTecnico from "./src/screens/tecnico/HomeTecnico";
@@ -141,7 +141,7 @@ function AppStack() {
       />
       <Stack.Screen
         name="RegistrarUsuarios"
-        component={RegistrarUsuariosGestor}
+        component={RegistrarUsuarios}
         options={{
           headerShown: false
         }}
