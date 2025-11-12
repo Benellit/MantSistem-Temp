@@ -5,9 +5,9 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { ActivityIndicator, Alert, View } from "react-native";
 import { useEffect, useRef } from "react";
 import { getAuth, signOut } from "firebase/auth";
+import AppToaster from "./src/ui/AppToaster";
 
-// Toast Notification
-import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message';
+
 
 // Contexto de auth
 import { AuthProvider, useAuth } from "./src/screens/login/AuthContext";
@@ -37,43 +37,6 @@ import CambiarContrasena from "./src/screens/shared/CambiarContrasena";
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
 
-// Configuracion del Toast Notification
-const SuccessToast = (props) => {
-  const { profile } = useAuth();
-
-  return (
-    <BaseToast
-      {...props}
-      style={{
-        borderLeftColor: '#4CAF50',
-        backgroundColor: profile?.modoOscuro ? '#2C2C2C' : 'white',
-      }}
-      contentContainerStyle={{ paddingHorizontal: 15 }}
-      text1Style={{
-        fontSize: 15,
-        fontWeight: 'bold',
-        color: profile?.modoOscuro ? '#2e7d32' : '#4CAF50',
-      }}
-      text2Style={{
-        fontSize: 14,
-        color: '#4CAF50',
-      }}
-    />
-  );
-};
-
-// Config global
-export const toastConfig = {
-  success: (props) => <SuccessToast {...props} />,
-  error: (props) => (
-    <ErrorToast
-      {...props}
-      text1Style={{ fontSize: 15, fontWeight: 'bold' }}
-      text2Style={{ fontSize: 14 }}
-    />
-  ),
-};
-
 /* ===================== App Root ===================== */
 
 export default function App() {
@@ -100,7 +63,8 @@ function Gate() {
   return (
     <>
       {user ? <AppStack /> : <AuthStack />}
-      <Toast config={toastConfig} />
+            <AppToaster />
+
     </>
   );
 }

@@ -20,9 +20,12 @@ import Feather from "@expo/vector-icons/Feather";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import Toast from "react-native-toast-message";
+import { getAuth, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
+import ConfirmSheet from "../../ui/ConfirmSheet"; 
 
 
 const db = getFirestore(appFirebase);
+
 
 // ========= TEMAS =========
 // ========= TEMAS (frío-neutro) =========
@@ -100,6 +103,15 @@ export default function PerfilShared({ navigation }) {
   const [saving, setSaving] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [showChangePwd, setShowChangePwd] = useState(false);
+  const [pwdCurrent, setPwdCurrent] = useState("");
+  const [pwdNew, setPwdNew] = useState("");
+  const [pwdNew2, setPwdNew2] = useState("");
+  const [changingPwd, setChangingPwd] = useState(false);
+  const [initialUserData, setInitialUserData] = useState(null);
+
+  const [showExitEdit, setShowExitEdit] = useState(false);
+  const [showLogout, setShowLogout] = useState(false);
 
   // Estados para los campos del perfil
   const [userData, setUserData] = useState({
@@ -120,7 +132,7 @@ export default function PerfilShared({ navigation }) {
   // Cargar datos del usuario desde el profile del contexto
   useEffect(() => {
     if (profile) {
-      setUserData({
+      const normalizedData = {
         primerNombre: profile.primerNombre || "",
         segundoNombre: profile.segundoNombre || "",
         primerApellido: profile.primerApellido || "",
@@ -133,7 +145,9 @@ export default function PerfilShared({ navigation }) {
         modoOscuro: profile.modoOscuro || false,
         IDSucursal: profile.IDSucursal || null,
         fechaRegistro: profile.fechaRegistro || null,
-      });
+      };
+      setUserData(normalizedData);
+      setInitialUserData({ ...normalizedData });
       setLoading(false);
     }
   }, [profile]);
@@ -146,6 +160,10 @@ export default function PerfilShared({ navigation }) {
 
 
   const styles = useMemo(() => createStyles(theme), [theme]);
+  const isDirty = useMemo(() => {
+    if (!initialUserData) return false;
+    return JSON.stringify(userData) !== JSON.stringify(initialUserData);
+  }, [userData, initialUserData]);
 
   // Subir imagen a Cloudinary
   const uploadImageToCloudinary = async (uri) => {
@@ -189,10 +207,10 @@ export default function PerfilShared({ navigation }) {
 
       if (status !== "granted") {
         Toast.show({
-        type: "error",
-        text1: "Permiso denegado",
-        text2: "Autoriza el acceso a tu galería para continuar.",
-      });
+        type: "appError",
+          text1: "Permiso denegado",
+          text2: "Autoriza el acceso a tu galería para continuar.",
+        });
 
         return;
       }
@@ -211,19 +229,19 @@ export default function PerfilShared({ navigation }) {
         );
         setUserData((prev) => ({ ...prev, fotoPerfil: imageUrl }));
         Toast.show({
-        type: "success",
-        text1: "Foto actualizada",
-        text2: "Imagen cargada correctamente.",
-      });
+        type: "appSuccess",
+          text1: "Foto actualizada",
+          text2: "Imagen cargada correctamente.",
+        });
 
       }
     } catch (error) {
       console.error("Error seleccionando imagen:", error);
       Toast.show({
-      type: "error",
-      text1: "No se pudo cargar",
-      text2: "Ocurrió un error al subir la imagen.",
-    });
+      type: "appError",
+        text1: "No se pudo cargar",
+        text2: "Ocurrió un error al subir la imagen.",
+      });
 
     } finally {
       setUploadingImage(false);
@@ -237,10 +255,11 @@ export default function PerfilShared({ navigation }) {
 
       if (status !== "granted") {
         Toast.show({
-        type: "error",
+        type: "appError",
         text1: "Permiso denegado",
         text2: "Autoriza el acceso a la cámara para continuar.",
       });
+
 
         return;
       }
@@ -258,19 +277,19 @@ export default function PerfilShared({ navigation }) {
         );
         setUserData((prev) => ({ ...prev, fotoPerfil: imageUrl }));
         Toast.show({
-        type: "success",
-        text1: "Foto actualizada",
-        text2: "Foto tomada correctamente.",
-      });
+        type: "appSuccess",
+          text1: "Foto actualizada",
+          text2: "Foto tomada correctamente.",
+        });
 
       }
     } catch (error) {
       console.error("Error tomando foto:", error);
       Toast.show({
-      type: "error",
-      text1: "No se pudo tomar la foto",
-      text2: "Intenta de nuevo en un momento.",
-    });
+        type: "appError",
+        text1: "No se pudo tomar la foto",
+        text2: "Intenta de nuevo en un momento.",
+      });
 
     } finally {
       setUploadingImage(false);
@@ -291,19 +310,18 @@ export default function PerfilShared({ navigation }) {
     if (!profile?.id) return;
 
     if (!userData.primerNombre.trim() || !userData.primerApellido.trim()) {
-  Toast.show({
-    type: "error",
-    text1: "Falta información",
-    text2: "Nombre y primer apellido son obligatorios.",
-  });
-  return;
-}
-
+      Toast.show({
+        type: "appError",
+        text1: "Falta información",
+        text2: "Nombre y primer apellido son obligatorios.",
+      });
+      return;
+    }
 
     setSaving(true);
     try {
       const userRef = doc(db, "USUARIO", profile.id);
-      await updateDoc(userRef, {
+      const trimmedData = {
         primerNombre: userData.primerNombre.trim(),
         segundoNombre: userData.segundoNombre.trim(),
         primerApellido: userData.primerApellido.trim(),
@@ -311,21 +329,38 @@ export default function PerfilShared({ navigation }) {
         numTel: userData.numTel.trim(),
         fotoPerfil: userData.fotoPerfil.trim(),
         modoOscuro: userData.modoOscuro,
+        email: userData.email,
+        rol: userData.rol,
+        estado: userData.estado,
+        IDSucursal: userData.IDSucursal,
+        fechaRegistro: userData.fechaRegistro,
+      };
+      await updateDoc(userRef, {
+        primerNombre: trimmedData.primerNombre,
+        segundoNombre: trimmedData.segundoNombre,
+        primerApellido: trimmedData.primerApellido,
+        segundoApellido: trimmedData.segundoApellido,
+        numTel: trimmedData.numTel,
+        fotoPerfil: trimmedData.fotoPerfil,
+        modoOscuro: trimmedData.modoOscuro,
       });
 
+      setUserData(trimmedData);
+      setInitialUserData({ ...trimmedData });
+
       Toast.show({
-      type: "success",
-      text1: "Perfil actualizado",
-      text2: "Los cambios se guardaron correctamente.",
-    });
+        type: "appSuccess",
+        text1: "Perfil actualizado",
+        text2: "Los cambios se guardaron correctamente.",
+      });
       setIsEditing(false);
     } catch (error) {
       console.error("Error al guardar perfil:", error);
       Toast.show({
-      type: "error",
-      text1: "No se pudo guardar",
-      text2: "Ocurrió un error al actualizar el perfil.",
-    });
+        type: "appError",
+        text1: "No se pudo guardar",
+        text2: "Ocurrió un error al actualizar el perfil.",
+      });
     } finally {
       setSaving(false);
     }
@@ -341,10 +376,10 @@ export default function PerfilShared({ navigation }) {
     } catch (error) {
       console.error("Error actualizando modo oscuro:", error);
       Toast.show({
-      type: "error",
-      text1: "No se actualizó el tema",
-      text2: "Intenta de nuevo.",
-    });
+        type: "appError",
+        text1: "No se actualizó el tema",
+        text2: "Intenta de nuevo.",
+      });
 
       setUserData((p) => ({ ...p, modoOscuro: prev }));
     }
@@ -390,18 +425,38 @@ export default function PerfilShared({ navigation }) {
         <Text style={styles.title}>Mi perfil</Text>
         <View style={styles.headerActions}>
           <TouchableOpacity
-            onPress={() => setIsEditing(!isEditing)}
-            style={[
-              styles.editButton,
-              isEditing && styles.editButtonActive,
-            ]}
-          >
-            <Feather
-              name={isEditing ? "x" : "edit-2"}
-              size={18}
-              color={theme.primary}
-            />
-          </TouchableOpacity>
+          onPress={() => {
+            if (isEditing && isDirty) {
+              setShowExitEdit(true);
+            } else {
+              setIsEditing(!isEditing);
+            }
+          }}
+          style={[styles.editButton, isEditing && styles.editButtonActive]}
+        >
+          <Feather name={isEditing ? "x" : "edit-2"} size={18} color={theme.primary} />
+        </TouchableOpacity>
+
+                <ConfirmSheet
+          visible={showExitEdit}
+          title="Cambios sin guardar"
+          message="Tienes cambios sin guardar."
+          cancelText="Descartar"
+          confirmText="Guardar"
+          destructive 
+          onCancel={() => {
+            if (initialUserData) setUserData({ ...initialUserData });
+            setIsEditing(false);
+            setShowExitEdit(false);
+          }}
+          onConfirm={() => {
+            setShowExitEdit(false);
+            handleSave();
+          }}
+          theme={theme}
+        />
+
+
 
           <TouchableOpacity
             style={[
@@ -596,6 +651,117 @@ export default function PerfilShared({ navigation }) {
         </View>
       </View>
 
+       <View style={[styles.cardCombined, { marginTop: 16 }]}>
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+          <Text style={styles.sectionTitle}>Contraseña</Text>
+          <TouchableOpacity onPress={() => setShowChangePwd((v) => !v)} style={styles.changePwdToggle}>
+            <Text style={{ color: theme.primary, fontWeight: "700" }}>
+              {showChangePwd ? "Cancelar" : "Cambiar contraseña"}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {showChangePwd && (
+          <View>
+            <View style={styles.fieldContainer}>
+              <Text style={styles.label}>Contraseña actual</Text>
+              <TextInput
+                style={styles.input}
+                value={pwdCurrent}
+                onChangeText={setPwdCurrent}
+                secureTextEntry
+                placeholder="Tu contraseña actual"
+                placeholderTextColor={theme.placeholder}
+              />
+            </View>
+            <View style={styles.fieldContainer}>
+              <Text style={styles.label}>Nueva contraseña</Text>
+              <TextInput
+                style={styles.input}
+                value={pwdNew}
+                onChangeText={setPwdNew}
+                secureTextEntry
+                placeholder="Mínimo 6 caracteres"
+                placeholderTextColor={theme.placeholder}
+              />
+            </View>
+            <View style={styles.fieldContainer}>
+              <Text style={styles.label}>Repite nueva contraseña</Text>
+              <TextInput
+                style={styles.input}
+                value={pwdNew2}
+                onChangeText={setPwdNew2}
+                secureTextEntry
+                placeholder="Confirma tu nueva contraseña"
+                placeholderTextColor={theme.placeholder}
+              />
+            </View>
+
+            <TouchableOpacity
+              style={[styles.saveButton, changingPwd && styles.saveButtonDisabled]}
+              disabled={changingPwd}
+              onPress={async () => {
+                if (!pwdCurrent || !pwdNew || !pwdNew2) {
+                  Toast.show({
+                    type: "appError",
+                    text1: "Completa los campos",
+                    text2: "Llena las 3 casillas.",
+                  });
+                  return;
+                }
+                if (pwdNew.length < 6) {
+                  Toast.show({
+                    type: "appError",
+                    text1: "Contraseña débil",
+                    text2: "Mínimo 6 caracteres.",
+                  });
+                  return;
+                }
+                if (pwdNew !== pwdNew2) {
+                  Toast.show({
+                    type: "appError",
+                    text1: "No coinciden",
+                    text2: "Repite la nueva contraseña correctamente.",
+                  });
+                  return;
+                }
+
+                setChangingPwd(true);
+                try {
+                  const auth = getAuth();
+                  const user = auth.currentUser;
+                  if (!user || !profile?.email) {
+                    throw new Error("No authenticated user");
+                  }
+                  const cred = EmailAuthProvider.credential(profile.email, pwdCurrent);
+                  await reauthenticateWithCredential(user, cred);
+                  await updatePassword(user, pwdNew);
+                  Toast.show({
+                    type: "appSuccess",
+                    text1: "Contraseña actualizada",
+                    text2: "Tu contraseña fue cambiada.",
+                  });
+                  setPwdCurrent("");
+                  setPwdNew("");
+                  setPwdNew2("");
+                  setShowChangePwd(false);
+                } catch (e) {
+                  Toast.show({
+                    type: "appError",
+                    text1: "Error",
+                    text2: "Verifica tu contraseña actual.",
+                  });
+                } finally {
+                  setChangingPwd(false);
+                }
+              }}
+            >
+              {changingPwd ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveButtonText}>Actualizar contraseña</Text>}
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+
       {/* Botones */}
       {isEditing && (
         <TouchableOpacity
@@ -611,15 +777,29 @@ export default function PerfilShared({ navigation }) {
         </TouchableOpacity>
       )}
 
-      <TouchableOpacity style={styles.logoutButton} onPress={logout}>
-        <Ionicons
-          name="log-out-outline"
-          size={20}
-          color="#fff"
-          style={styles.logoutIcon}
-        />
+      <TouchableOpacity
+        style={styles.logoutButton}
+        onPress={() => setShowLogout(true)}
+      >
+        <Ionicons name="log-out-outline" size={20} color="#fff" style={styles.logoutIcon} />
         <Text style={styles.logoutButtonText}>Cerrar Sesión</Text>
       </TouchableOpacity>
+
+      <ConfirmSheet
+        visible={showLogout}
+        title="Cerrar sesión"
+        message="¿Seguro que quieres salir?"
+        cancelText="Cancelar"
+        confirmText="Sí, salir"
+        destructive
+        onCancel={() => setShowLogout(false)}
+        onConfirm={() => {
+          setShowLogout(false);
+          logout();
+        }}
+        theme={theme}
+      />
+
 
       <View style={{ height: 40 }} />
     </ScrollView>
@@ -786,6 +966,14 @@ function createStyles(theme) {
       fontWeight: "700",
       color: theme.text,
       marginBottom: 14,
+    },
+    changePwdToggle: {
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      borderRadius: 10,
+      backgroundColor: theme.chipBg,
+      borderWidth: 1,
+      borderColor: theme.chipBorder,
     },
     sectionDivider: {
       height: 1,
