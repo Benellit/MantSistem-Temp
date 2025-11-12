@@ -43,7 +43,7 @@ const themeLight = {
   inputDisabledBg: "#f3f4f6",
   inputText: "#111827",
   placeholder: "#9ca3af",
-  primary: "#007AFF",
+  primary: "#000000ff",
   danger: "#d9534f",
   shadow: 0.08,
   divider: "#eef2f7",
