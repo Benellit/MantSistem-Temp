@@ -3,7 +3,15 @@ import Feather from "@expo/vector-icons/Feather";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
-import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
+import { initializeApp, getApps } from "firebase/app";
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  signOut,
+  signInWithEmailAndPassword
+} from "firebase/auth";
+import { firebaseConfig } from "../../credenciales/Credenciales";
+
 import { doc, setDoc, collection, getDocs, getFirestore, serverTimestamp } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import {
@@ -18,6 +26,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import Toast from "react-native-toast-message";
 import appFirebase, { cloudinaryConfig } from "../../credenciales/Credenciales";
 import { useAuth } from "../login/AuthContext";
 
@@ -33,6 +42,21 @@ const extractSucursalId = (val) => {
   }
   return null;
 };
+
+// Reusa SIEMPRE la misma instancia "Secondary"
+const getSecondaryAuth = () => {
+  const existing = getApps().find(a => a.name === "Secondary");
+  const secondaryApp = existing || initializeApp(firebaseConfig, "Secondary");
+  return getAuth(secondaryApp);
+};
+
+// Crea usuario SIN tocar la sesión actual (usa Auth secundario)
+const createUserWithoutSignOut = async (email, password) => {
+  const secondaryAuth = getSecondaryAuth();
+  const cred = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+  return cred; // el signOut del secundario se hace tras setDoc
+};
+
 
 const RegistrarUsuariosGestor = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
@@ -233,128 +257,164 @@ const RegistrarUsuariosGestor = ({ navigation }) => {
   };
 
   // Validar formulario
-  const validateForm = () => {
-    if (!formData.primerNombre.trim()) {
-      Alert.alert("Error", "El primer nombre es obligatorio");
-      return false;
-    }
-    if (!formData.primerApellido.trim()) {
-      Alert.alert("Error", "El primer apellido es obligatorio");
-      return false;
-    }
-    if (!formData.email.trim()) {
-      Alert.alert("Error", "El email es obligatorio");
-      return false;
-    }
-    if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      Alert.alert("Error", "El email no es válido");
-      return false;
-    }
-    if (isAdmin && !formData.IDSucursal) {
-      Alert.alert("Error", "Debe seleccionar una sucursal");
-      return false;
-    }
-    return true;
-  };
+  // Validar formulario
+const validateForm = () => {
+  if (!formData.primerNombre.trim()) {
+    Toast.show({ type: "error", text1: "Falta información", text2: "El primer nombre es obligatorio." });
+    return false;
+  }
+  if (!formData.primerApellido.trim()) {
+    Toast.show({ type: "error", text1: "Falta información", text2: "El primer apellido es obligatorio." });
+    return false;
+  }
+  if (!formData.email.trim()) {
+    Toast.show({ type: "error", text1: "Falta información", text2: "El correo electrónico es obligatorio." });
+    return false;
+  }
+  if (!/\S+@\S+\.\S+/.test(formData.email)) {
+    Toast.show({ type: "error", text1: "Correo inválido", text2: "Ingresa un correo electrónico válido." });
+    return false;
+  }
+  if (isAdmin && !formData.IDSucursal) {
+    Toast.show({ type: "error", text1: "Falta información", text2: "Debe seleccionar una sucursal." });
+    return false;
+  }
+  return true;
+};
+
 
   // Registrar usuario
   const handleRegister = async () => {
-    if (!validateForm()) return;
+  if (!validateForm()) return;
 
-    setLoading(true);
-    try {
-      const {
-        primerNombre,
-        segundoNombre,
-        primerApellido,
-        segundoApellido,
-        email,
-        numTel,
-        fotoPerfil,
-        estado,
-      } = formData;
+  setLoading(true);
+  try {
+    const {
+      primerNombre,
+      segundoNombre,
+      primerApellido,
+      segundoApellido,
+      email,
+      numTel,
+      fotoPerfil,
+      estado,
+    } = formData;
 
-      const sucursalId = isGestor
-        ? extractSucursalId(profile?.IDSucursal)
-        : extractSucursalId(formData?.IDSucursal);
+    const sucursalId = isGestor
+      ? extractSucursalId(profile?.IDSucursal)
+      : extractSucursalId(formData?.IDSucursal);
 
-      if (!sucursalId) {
-        Alert.alert("Error", "No se pudo determinar la sucursal.");
-        setLoading(false);
-        return;
-      }
-
-       const authInstance = getAuth();
-      const emailLimpio = email.trim().toLowerCase();
-      const cred = await createUserWithEmailAndPassword(
-        authInstance,
-        emailLimpio,
-        TEMP_PASSWORD
-      );
-
-      await setDoc(doc(db, "USUARIO", cred.user.uid), {
-        primerNombre: primerNombre.trim(),
-        segundoNombre: segundoNombre.trim(),
-        primerApellido: primerApellido.trim(),
-        segundoApellido: segundoApellido.trim(),
-        email: emailLimpio,
-        numTel: (numTel || "").trim(),
-        fotoPerfil: fotoPerfil || "",
-        rol: formData.rol || "Tecnico",
-        IDSucursal: doc(db, "SUCURSAL", sucursalId),
-        estado,
-        modoOscuro: false,
-        fechaRegistro: serverTimestamp(),
-      mustChangePassword: true,
-      });
-
-      Alert.alert(
-        "Éxito",
-        "Cuenta creada con contraseña temporal. El usuario deberá cambiarla al iniciar sesión.",
-        [
-          {
-            text: "OK",
-            onPress: () => {
-              // Resetear formulario
-              setFormData(prev => ({
-            primerNombre: "",
-            segundoNombre: "",
-            primerApellido: "",
-            segundoApellido: "",
-            email: "",
-            numTel: "",
-            fotoPerfil: "",
-            rol: "Tecnico",
-            IDSucursal: isGestor ? prev.IDSucursal : null,
-            sucursalNombre: isGestor ? prev.sucursalNombre : "",
-            estado: "Activo",
-            modoOscuro: false,
-          }));
-
-
-            // Navegar atrás si es necesario
-            if (navigation?.goBack) {
-              navigation.goBack();
-            }
-          },
-        },
-      ]);
-    } catch (error) {
-      console.error("Error registrando usuario:", error);
-      let errorMessage = "No se pudo registrar el usuario";
-
-      if (error.code === "auth/email-already-in-use") {
-        errorMessage = "El email ya está en uso";
-      } else if (error.code === "auth/invalid-email") {
-        errorMessage = "El email no es válido";
-      
-      }
-
-      Alert.alert("Error", errorMessage);
-    } finally {
+    if (!sucursalId) {
+      Toast.show({ type: "error", text1: "Error", text2: "No se pudo determinar la sucursal." });
       setLoading(false);
+      return;
     }
-  };
+
+    const emailLimpio = email.trim().toLowerCase();
+
+    // 1) Crear usuario en Auth secundaria
+    const cred = await createUserWithoutSignOut(emailLimpio, TEMP_PASSWORD);
+
+    // 2) Escribir/actualizar Firestore
+    await setDoc(doc(db, "USUARIO", cred.user.uid), {
+      primerNombre: primerNombre.trim(),
+      segundoNombre: segundoNombre.trim(),
+      primerApellido: primerApellido.trim(),
+      segundoApellido: segundoApellido.trim(),
+      email: emailLimpio,
+      numTel: (numTel || "").trim(),
+      fotoPerfil: fotoPerfil || "",
+      rol: (isAdmin ? (formData.rol || "Tecnico") : "Tecnico"),
+      IDSucursal: doc(db, "SUCURSAL", sucursalId),
+      estado,
+      modoOscuro: false,
+      fechaRegistro: serverTimestamp(),
+      mustChangePassword: true,
+    });
+
+    // 3) Cleanup: cerrar sesión SOLO del Auth secundario
+    try { await signOut(getSecondaryAuth()); } catch (_) {}
+
+    // 4) Reset + navegación + Toast
+    setFormData(prev => ({
+      primerNombre: "",
+      segundoNombre: "",
+      primerApellido: "",
+      segundoApellido: "",
+      email: "",
+      numTel: "",
+      fotoPerfil: "",
+      rol: "Tecnico",
+      IDSucursal: isGestor ? prev.IDSucursal : null,
+      sucursalNombre: isGestor ? prev.sucursalNombre : "",
+      estado: "Activo",
+      modoOscuro: false,
+    }));
+
+    if (navigation?.goBack) navigation.goBack();
+
+    Toast.show({
+      type: "success",
+      text1: "Usuario registrado",
+      text2: "Contraseña temporal: 123456",
+    });
+
+  } catch (error) {
+    // Backfill: si el email ya existía en Auth pero faltó Firestore
+    if (error.code === "auth/email-already-in-use") {
+      try {
+        const emailLimpio = formData.email.trim().toLowerCase();
+        const secondaryAuth = getSecondaryAuth();
+        const signed = await signInWithEmailAndPassword(secondaryAuth, emailLimpio, TEMP_PASSWORD);
+        const uid = signed.user.uid;
+
+        await setDoc(doc(db, "USUARIO", uid), {
+          primerNombre: formData.primerNombre.trim(),
+          segundoNombre: formData.segundoNombre.trim(),
+          primerApellido: formData.primerApellido.trim(),
+          segundoApellido: formData.segundoApellido.trim(),
+          email: emailLimpio,
+          numTel: (formData.numTel || "").trim(),
+          fotoPerfil: formData.fotoPerfil || "",
+          rol: (isAdmin ? (formData.rol || "Tecnico") : "Tecnico"),
+          IDSucursal: doc(db, "SUCURSAL", extractSucursalId(isGestor ? profile?.IDSucursal : formData?.IDSucursal)),
+          estado: formData.estado,
+          modoOscuro: false,
+          fechaRegistro: serverTimestamp(),
+          mustChangePassword: true,
+        }, { merge: true });
+
+        try { await signOut(secondaryAuth); } catch (_) {}
+
+        Toast.show({
+          type: "success",
+          text1: "Usuario ya existía",
+          text2: "Perfil completado en la base de datos.",
+        });
+
+        if (navigation?.goBack) navigation.goBack();
+        return;
+      } catch (repairErr) {
+        console.error("Repair flow failed:", repairErr);
+      }
+    }
+
+    console.error("Error registrando usuario:", error);
+    const errorMessage =
+      error.code === "auth/invalid-email" ? "El email no es válido" :
+      error.code === "auth/email-already-in-use" ? "El email ya está en uso" :
+      "No se pudo registrar el usuario";
+
+    Toast.show({
+      type: "error",
+      text1: "Error al registrar",
+      text2: errorMessage,
+    });
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   if (loadingSucursales) {
     return (

@@ -19,6 +19,8 @@ import * as ImagePicker from "expo-image-picker";
 import Feather from "@expo/vector-icons/Feather";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import Toast from "react-native-toast-message";
+
 
 const db = getFirestore(appFirebase);
 
@@ -186,10 +188,12 @@ export default function PerfilShared({ navigation }) {
         await ImagePicker.requestMediaLibraryPermissionsAsync();
 
       if (status !== "granted") {
-        Alert.alert(
-          "Permiso denegado",
-          "Se necesita permiso para acceder a la galería"
-        );
+        Toast.show({
+        type: "error",
+        text1: "Permiso denegado",
+        text2: "Autoriza el acceso a tu galería para continuar.",
+      });
+
         return;
       }
 
@@ -206,11 +210,21 @@ export default function PerfilShared({ navigation }) {
           result.assets[0].uri
         );
         setUserData((prev) => ({ ...prev, fotoPerfil: imageUrl }));
-        Alert.alert("Éxito", "Imagen cargada correctamente");
+        Toast.show({
+        type: "success",
+        text1: "Foto actualizada",
+        text2: "Imagen cargada correctamente.",
+      });
+
       }
     } catch (error) {
       console.error("Error seleccionando imagen:", error);
-      Alert.alert("Error", "No se pudo cargar la imagen");
+      Toast.show({
+      type: "error",
+      text1: "No se pudo cargar",
+      text2: "Ocurrió un error al subir la imagen.",
+    });
+
     } finally {
       setUploadingImage(false);
     }
@@ -222,10 +236,12 @@ export default function PerfilShared({ navigation }) {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
 
       if (status !== "granted") {
-        Alert.alert(
-          "Permiso denegado",
-          "Se necesita permiso para acceder a la cámara"
-        );
+        Toast.show({
+        type: "error",
+        text1: "Permiso denegado",
+        text2: "Autoriza el acceso a la cámara para continuar.",
+      });
+
         return;
       }
 
@@ -241,11 +257,21 @@ export default function PerfilShared({ navigation }) {
           result.assets[0].uri
         );
         setUserData((prev) => ({ ...prev, fotoPerfil: imageUrl }));
-        Alert.alert("Éxito", "Foto tomada correctamente");
+        Toast.show({
+        type: "success",
+        text1: "Foto actualizada",
+        text2: "Foto tomada correctamente.",
+      });
+
       }
     } catch (error) {
       console.error("Error tomando foto:", error);
-      Alert.alert("Error", "No se pudo tomar la foto");
+      Toast.show({
+      type: "error",
+      text1: "No se pudo tomar la foto",
+      text2: "Intenta de nuevo en un momento.",
+    });
+
     } finally {
       setUploadingImage(false);
     }
@@ -265,9 +291,14 @@ export default function PerfilShared({ navigation }) {
     if (!profile?.id) return;
 
     if (!userData.primerNombre.trim() || !userData.primerApellido.trim()) {
-      Alert.alert("Error", "El nombre y apellido son obligatorios");
-      return;
-    }
+  Toast.show({
+    type: "error",
+    text1: "Falta información",
+    text2: "Nombre y primer apellido son obligatorios.",
+  });
+  return;
+}
+
 
     setSaving(true);
     try {
@@ -282,11 +313,19 @@ export default function PerfilShared({ navigation }) {
         modoOscuro: userData.modoOscuro,
       });
 
-      Alert.alert("Éxito", "Perfil actualizado correctamente");
+      Toast.show({
+      type: "success",
+      text1: "Perfil actualizado",
+      text2: "Los cambios se guardaron correctamente.",
+    });
       setIsEditing(false);
     } catch (error) {
       console.error("Error al guardar perfil:", error);
-      Alert.alert("Error", "No se pudo actualizar el perfil");
+      Toast.show({
+      type: "error",
+      text1: "No se pudo guardar",
+      text2: "Ocurrió un error al actualizar el perfil.",
+    });
     } finally {
       setSaving(false);
     }
@@ -301,7 +340,12 @@ export default function PerfilShared({ navigation }) {
       await updateProfile({ ...profile, modoOscuro: next });
     } catch (error) {
       console.error("Error actualizando modo oscuro:", error);
-      Alert.alert("Error", "No se pudo actualizar el modo oscuro");
+      Toast.show({
+      type: "error",
+      text1: "No se actualizó el tema",
+      text2: "Intenta de nuevo.",
+    });
+
       setUserData((p) => ({ ...p, modoOscuro: prev }));
     }
   };
