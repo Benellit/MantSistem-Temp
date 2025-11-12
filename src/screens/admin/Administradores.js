@@ -44,15 +44,59 @@ const UsuariosGestor = ({ navigation }) => {
         await obtenerUsuarios();
         setRefreshing(false);
     };
+    
+        // === Opciones fijas ===
+    const ROLES = ["Administrador", "Gestor", "Técnico"]; // ojo con acentos (ver nota abajo)
+    const ESTADOS = ["Activo", "Inactivo"];
 
-    // Filtrar usuarios por búsqueda
-    const usuariosFiltrados = usuarios.filter(usuario => {
-        const nombreCompleto = `${usuario.primerNombre || ''} ${usuario.segundoNombre || ''} ${usuario.primerApellido || ''} ${usuario.segundoApellido || ''}`.toLowerCase();
-        const termino = busqueda.toLowerCase();
-        return nombreCompleto.includes(termino) ||
-            usuario.email?.toLowerCase().includes(termino) ||
-            usuario.rol?.toLowerCase().includes(termino);
+    // Modal de filtros
+    const [openFiltros, setOpenFiltros] = useState(false);
+
+    // applied = lo que afecta la lista; draft = edición del modal
+    const [appliedFilters, setAppliedFilters] = useState({
+    sucursal: null,
+    estado: null,
+    roles: [],
     });
+    const [draftFilters, setDraftFilters] = useState(appliedFilters);
+
+    // contador del badge
+    const activeCount = (f => (f.estado ? 1:0) + (f.sucursal ? 1:0) + (f.roles?.length?1:0))(appliedFilters);
+
+
+        const usuariosFiltrados = usuarios.filter(usuario => {
+    // 1) búsqueda texto (igual que ya tenías)
+    const nombreCompleto = `${usuario.primerNombre || ''} ${usuario.segundoNombre || ''} ${usuario.primerApellido || ''} ${usuario.segundoApellido || ''}`.toLowerCase();
+    const termino = busqueda.toLowerCase();
+    const pasaTexto =
+        nombreCompleto.includes(termino) ||
+        usuario.email?.toLowerCase().includes(termino) ||
+        usuario.rol?.toLowerCase().includes(termino);
+
+    if (!pasaTexto) return false;
+
+    // 2) filtros aplicados
+    const { estado, sucursal, roles } = appliedFilters;
+
+    // Estado (==)
+    if (estado && (usuario.estado || "").toLowerCase() !== estado.toLowerCase()) return false;
+
+    // Sucursal (single)
+    if (sucursal) {
+        const idS = extractSucursalId(
+        usuario.sucursalNombre ?? usuario.sucursal ?? usuario.Sucursal ?? usuario.IDSucursal
+        );
+        if ((idS || "").toString() !== sucursal.toString()) return false;
+    }
+
+    // Rol (multi)
+    if (roles?.length) {
+        if (!usuario.rol || !roles.includes(usuario.rol)) return false;
+    }
+
+    return true;
+    });
+
 
     // === Helpers visuales ===
     const getEstadoColor = (estado) => {
@@ -109,6 +153,30 @@ const UsuariosGestor = ({ navigation }) => {
             }
         })();
     }, []);
+
+        // Devuelve "1" a partir de distintos formatos ("/SUCURSAL/1", Ref, id, etc.)
+   
+ const extractSucursalId = (val) => {
+    if (!val) return null;
+    if (typeof val === "object" && val !== null) {
+        if ("id" in val) return val.id;     // DocumentRef
+        if ("path" in val && typeof val.path === "string") {
+        const s = val.path.split("/");    // ".../SUCURSAL/1"
+        return s[s.length - 1] || null;
+        }
+        return null;
+    }
+    if (typeof val === "string") {
+        const m = val.match(/\/SUCURSAL\/(.+)$/i);
+        if (m) return m[1];
+        return val; // ya viene como "1"
+    }
+    return null;
+    };
+
+       
+
+
 
     // Navegar al perfil del usuario seleccionado
     const verPerfilUsuario = (usuario) => {
@@ -174,14 +242,18 @@ const UsuariosGestor = ({ navigation }) => {
                                     opacity: refreshing ? 0.6 : 1,
                                 }}
                             >
-                                <FontAwesome6 name="magnifying-glass" size={16} color={profile.modoOscuro ? 'black' : '#FFFF'} />
+                                <FontAwesome6 name="magnifying-glass" size={16} color={profile.modoOscuro ? '#FFFF' : '#FFFF'} />
                             </TouchableOpacity>
                         </View>
 
                         <View style={{ marginTop: 5, justifyContent: 'center', alignContent: 'center' }}>
-                            <TouchableOpacity style={styles.opciones} onPress={() => { /* abrir filtros si aplica */ }}>
-                                <Ionicons name="options-outline" size={24} color={profile.modoOscuro ? 'black' : '#FFFF'} />
+                            <TouchableOpacity
+                            style={styles.opciones}
+                            onPress={() => { setDraftFilters(appliedFilters); setOpenFiltros(true); }}
+                            >
+                            <Ionicons name="options-outline" size={24} color="#FFFF" />
                             </TouchableOpacity>
+
                         </View>
                     </View>
                 </View>
@@ -303,6 +375,132 @@ const UsuariosGestor = ({ navigation }) => {
                         )}
                     </ScrollView>
                 </View>
+                {/* ===== Modal Filtros ===== */}
+            {openFiltros && (
+            <View
+                // Backdrop (tocar fuera cierra sin aplicar)
+                onStartShouldSetResponder={() => { setOpenFiltros(false); /* descarta draft */ return true; }}
+                style={{ position:'absolute', inset:0, backgroundColor:'rgba(0,0,0,0.45)', justifyContent:'flex-end' }}
+            >
+                <View
+                // Evitar que el tap dentro cierre
+                onStartShouldSetResponder={() => true}
+                style={{
+                    backgroundColor: profile.modoOscuro ? '#2C2C2C' : '#fff',
+                    padding: 16, borderTopLeftRadius: 16, borderTopRightRadius: 16,
+                }}
+                >
+                {/* Header */}
+                <View style={{ flexDirection:'row', justifyContent:'space-between', alignItems:'center', marginBottom:8 }}>
+                    <Text style={{ fontSize:16, fontWeight:'700', color: profile.modoOscuro ? '#fff' : '#111' }}>
+                    Filtros
+                    </Text>
+                    <TouchableOpacity onPress={() => setOpenFiltros(false)}>
+                    <Ionicons name="close" size={20} color={profile.modoOscuro ? '#fff' : '#111'} />
+                    </TouchableOpacity>
+                </View>
+
+                {/* Sucursal */}
+                <Text style={{ color: profile.modoOscuro ? '#D1D5DB' : '#6B7280', marginBottom:6 }}>Sucursal</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom:12 }}>
+                    {Object.keys(sucursalesById).map(id => {
+                    const on = draftFilters.sucursal === id;
+                    return (
+                        <TouchableOpacity
+                        key={id}
+                        onPress={() => setDraftFilters(prev => ({ ...prev, sucursal: on ? null : id }))}
+                        style={{
+                            paddingVertical:8, paddingHorizontal:12, borderRadius:16, marginRight:8,
+                            borderWidth:1,
+                            borderColor: on ? '#87aef0' : (profile.modoOscuro ? '#3C3C3C' : '#E5E7EB'),
+                            backgroundColor: on ? '#E9F2FF' : (profile.modoOscuro ? '#343434' : '#fff')
+                        }}
+                        >
+                        <Text style={{ color: profile.modoOscuro ? '#fff' : '#111' }}>
+                            {sucursalesById[id] ?? id}
+                        </Text>
+                        </TouchableOpacity>
+                    );
+                    })}
+                </ScrollView>
+
+                {/* Estado */}
+                <Text style={{ color: profile.modoOscuro ? '#D1D5DB' : '#6B7280', marginBottom:6 }}>Estado</Text>
+                <View style={{ flexDirection:'row', gap:8, marginBottom:12 }}>
+                    {ESTADOS.map(e => {
+                    const on = draftFilters.estado === e;
+                    return (
+                        <TouchableOpacity
+                        key={e}
+                        onPress={() => setDraftFilters(prev => ({ ...prev, estado: on ? null : e }))}
+                        style={{
+                            flex:1, paddingVertical:10, borderRadius:10, alignItems:'center',
+                            backgroundColor: on ? '#111' : (profile.modoOscuro ? '#3A3A3A' : '#F3F4F6')
+                        }}
+                        >
+                        <Text style={{ color: on ? '#fff' : (profile.modoOscuro ? '#fff' : '#111'), fontWeight:'600' }}>{e}</Text>
+                        </TouchableOpacity>
+                    );
+                    })}
+                </View>
+
+                {/* Rol */}
+                <Text style={{ color: profile.modoOscuro ? '#D1D5DB' : '#6B7280', marginBottom:6 }}>Rol</Text>
+                <View style={{ flexDirection:'row', flexWrap:'wrap', gap:8, marginBottom:16 }}>
+                    {ROLES.map(r => {
+                    const on = draftFilters.roles.includes(r);
+                    return (
+                        <TouchableOpacity
+                        key={r}
+                        onPress={() =>
+                            setDraftFilters(prev => ({
+                            ...prev,
+                            roles: on ? prev.roles.filter(x => x !== r) : [...prev.roles, r]
+                            }))
+                        }
+                        style={{
+                            paddingVertical:8, paddingHorizontal:12, borderRadius:16,
+                            borderWidth:1,
+                            borderColor: on ? '#87aef0' : (profile.modoOscuro ? '#3C3C3C' : '#E5E7EB'),
+                            backgroundColor: on ? '#E9F2FF' : (profile.modoOscuro ? '#343434' : '#fff')
+                        }}
+                        >
+                        <Text style={{ color: profile.modoOscuro ? '#fff' : '#111' }}>{r}</Text>
+                        </TouchableOpacity>
+                    );
+                    })}
+                </View>
+
+                {/* Footer */}
+                <View style={{ flexDirection:'row', justifyContent:'space-between', alignItems:'center' }}>
+                    <TouchableOpacity
+                    onPress={() => setDraftFilters({ sucursal: null, estado: null, roles: [] })}
+                    disabled={!draftFilters.sucursal && !draftFilters.estado && !(draftFilters.roles?.length)}
+                    >
+                    <Text style={{ color: (draftFilters.sucursal || draftFilters.estado || draftFilters.roles?.length) ? '#6B7280' : '#9CA3AF' }}>
+                        Limpiar
+                    </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                    onPress={() => { setAppliedFilters(draftFilters); setOpenFiltros(false); }}
+                    disabled={
+                        JSON.stringify(draftFilters) === JSON.stringify(appliedFilters)
+                    }
+                    style={{
+                        paddingVertical:12, paddingHorizontal:18, borderRadius:12,
+                        backgroundColor: JSON.stringify(draftFilters) === JSON.stringify(appliedFilters) ? '#9CA3AF' : '#3B82F6'
+                    }}
+                    >
+                    <Text style={{ color:'#fff', fontWeight:'700' }}>
+                        {`Aplicar Filtro${activeCount ? ` (${activeCount})` : ''}`}
+                    </Text>
+                    </TouchableOpacity>
+                </View>
+                </View>
+            </View>
+            )}
+
                 <BotonRegistrar />
             </View>
         </LinearGradient>

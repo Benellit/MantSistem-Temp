@@ -126,7 +126,7 @@ const RegistrarSucursalesAdmin = ({ navigation }) => {
                     keyboardShouldPersistTaps="handled"
                 >
                     <View style={styles.formContainer}>
-                        <Text style={[styles.titulo, { paddingTop: 20 }, { color: profile.modoOscuro === true ? "white" : 'black' }]}>Datos de registro                    </Text>
+                        <Text style={[styles.titulo, { paddingTop: 10 }, { color: profile.modoOscuro === true ? "white" : 'black' }]}>Datos de registro                    </Text>
                         {/* Icono principal */}
                         <View style={styles.iconHeader}>
                             <View style={styles.iconCircle}>
@@ -236,6 +236,7 @@ const styles = StyleSheet.create({
     titulo: {
         fontSize: 18,
         fontWeight: 700,
+        marginBottom: 10,
     },
     container: {
         flex: 1,
@@ -296,7 +297,7 @@ const styles = StyleSheet.create({
     },
     iconHeader: {
         alignItems: "center",
-        marginBottom: 30,
+        marginBottom: 20,
     },
     iconCircle: {
         width: 100,
@@ -305,7 +306,7 @@ const styles = StyleSheet.create({
         backgroundColor: "#f0f5ff",
         justifyContent: "center",
         alignItems: "center",
-        marginBottom: 15,
+        marginBottom: 5,
     },
     subtitulo: {
         fontSize: 16,
