@@ -77,8 +77,23 @@ export function AuthProvider({ children }) {
       console.error("Error actualizando perfil:", error);
     }
   };
+  const refreshProfile = async () => {
+    try {
+      if (!auth.currentUser) return;
+      const ref = doc(db, "USUARIO", auth.currentUser.uid);
+      const snap = await getDoc(ref);
+      if (snap.exists()) {
+        setProfile({ id: auth.currentUser.uid, ...snap.data() });
+      }
+    } catch (error) {
+      console.error("Error actualizando datos del perfil:", error);
+    }
+  };
   const logout = () => signOut(auth);
 
-  const value = useMemo(() => ({ user, profile, loading, login, register, logout, updateProfile }), [user, profile, loading]);
+  const value = useMemo(
+    () => ({ user, profile, loading, login, register, logout, updateProfile, refreshProfile }),
+    [user, profile, loading]
+  );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

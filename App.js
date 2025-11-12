@@ -2,7 +2,9 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, Alert, View } from "react-native";
+import { useEffect, useRef } from "react";
+import { getAuth, signOut } from "firebase/auth";
 
 // Toast Notification
 import Toast, { BaseToast, ErrorToast } from 'react-native-toast-message';
@@ -30,6 +32,7 @@ import PerfilUsuarioShared from './src/screens/shared/PerfilUsuarioShared';
 import TareaDetails from './src/screens/shared/TareaDetails';
 import TareasShared from "./src/screens/shared/TareasShared";
 import EditarTareas from './src/screens/shared/EditarTareas';
+import CambiarContrasena from "./src/screens/shared/CambiarContrasena";
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -144,6 +147,13 @@ function AppStack() {
         }}
       />
       <Stack.Screen
+        name="CambiarContrasena"
+        component={CambiarContrasena}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
         name="TareaDetails"
         component={TareaDetails}
         options={{
@@ -173,8 +183,31 @@ function AppStack() {
 
 /* ===================== Tabs por rol ===================== */
 
-function RoleTabs() {
+function RoleTabs({ navigation }) {
   const { profile } = useAuth(); // viene de Firestore USUARIO/{uid}
+  const accessHandledRef = useRef(false);
+
+  useEffect(() => {
+    if (!profile || accessHandledRef.current) return;
+
+    const auth = getAuth();
+
+    if (profile.estado !== "Activo") {
+      accessHandledRef.current = true;
+      Alert.alert(
+        "Acceso restringido",
+        "Tu cuenta está inactiva. Contacta a un administrador."
+      );
+      signOut(auth);
+      return;
+    }
+
+    if (profile.mustChangePassword) {
+      accessHandledRef.current = true;
+      navigation.replace("CambiarContrasena", { userId: auth.currentUser?.uid });
+      return;
+    }
+  }, [profile, navigation]);
 
   if (profile?.rol === "Administrador") return <AdminScreens />;
   if (profile?.rol === "Gestor") return <GestorScreens />;

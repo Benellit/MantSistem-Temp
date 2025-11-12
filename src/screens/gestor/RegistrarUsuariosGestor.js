@@ -3,8 +3,8 @@ import Feather from "@expo/vector-icons/Feather";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
-import { createUserWithEmailAndPassword, getAuth } from "firebase/auth";
-import { collection, doc, getDocs, getFirestore, query, setDoc, where } from "firebase/firestore";
+import { getAuth, createUserWithEmailAndPassword } from "firebase/auth";
+import { doc, setDoc, collection, getDocs, getFirestore } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -22,7 +22,17 @@ import appFirebase, { cloudinaryConfig } from "../../credenciales/Credenciales";
 import { useAuth } from "../login/AuthContext";
 
 const db = getFirestore(appFirebase);
-const auth = getAuth(appFirebase);
+
+const TEMP_PASSWORD = "123456";
+const extractSucursalId = (val) => {
+  if (!val) return null;
+  if (typeof val === "object" && val?.id) return val.id;
+  if (typeof val === "string") {
+    const m = val.match(/\/?SUCURSAL\/([^/]+)$/i);
+    return m ? m[1] : val;
+  }
+  return null;
+};
 
 const RegistrarUsuariosGestor = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
@@ -34,6 +44,9 @@ const RegistrarUsuariosGestor = ({ navigation }) => {
   const [showEstadoModal, setShowEstadoModal] = useState(false);
   const { profile } = useAuth();
 
+  const isGestor = profile?.rol === "Gestor";
+  const isAdmin = profile?.rol === "Administrador";
+
   const roles = ["Tecnico"];
   const estados = ["Activo", "Inactivo"];
 
@@ -43,8 +56,6 @@ const RegistrarUsuariosGestor = ({ navigation }) => {
     primerApellido: "",
     segundoApellido: "",
     email: "",
-    password: "",
-    confirmPassword: "",
     numTel: "",
     fotoPerfil: "",
     rol: "Tecnico",
@@ -216,19 +227,7 @@ const RegistrarUsuariosGestor = ({ navigation }) => {
       Alert.alert("Error", "El email no es válido");
       return false;
     }
-    if (!formData.password) {
-      Alert.alert("Error", "La contraseña es obligatoria");
-      return false;
-    }
-    if (formData.password.length < 6) {
-      Alert.alert("Error", "La contraseña debe tener al menos 6 caracteres");
-      return false;
-    }
-    if (formData.password !== formData.confirmPassword) {
-      Alert.alert("Error", "Las contraseñas no coinciden");
-      return false;
-    }
-    if (!formData.IDSucursal) {
+    if (isAdmin && !formData.IDSucursal) {
       Alert.alert("Error", "Debe seleccionar una sucursal");
       return false;
     }
@@ -241,63 +240,70 @@ const RegistrarUsuariosGestor = ({ navigation }) => {
 
     setLoading(true);
     try {
-      // Verificar si el email ya existe
-      const usersQuery = query(
-        collection(db, "USUARIO"),
-        where("email", "==", formData.email.toLowerCase())
-      );
-      const existingUsers = await getDocs(usersQuery);
+      const {
+        primerNombre,
+        segundoNombre,
+        primerApellido,
+        segundoApellido,
+        email,
+        numTel,
+        fotoPerfil,
+        estado,
+      } = formData;
 
-      if (!existingUsers.empty) {
-        Alert.alert("Error", "Ya existe un usuario con este email");
+      const sucursalId = isGestor
+        ? extractSucursalId(profile?.IDSucursal)
+        : extractSucursalId(formData?.IDSucursal);
+
+      if (!sucursalId) {
+        Alert.alert("Error", "No se pudo determinar la sucursal.");
         setLoading(false);
         return;
       }
 
-      // Crear usuario en Firebase Auth
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        formData.email,
-        formData.password
+       const authInstance = getAuth();
+      const emailLimpio = email.trim().toLowerCase();
+      const cred = await createUserWithEmailAndPassword(
+        authInstance,
+        emailLimpio,
+        TEMP_PASSWORD
       );
 
-      // Crear referencia a la sucursal
-      const sucursalRef = doc(db, "SUCURSAL", formData.IDSucursal);
-
-      // Guardar en Firestore
-      await setDoc(doc(db, "USUARIO", userCredential.user.uid), {
-        primerNombre: formData.primerNombre.trim(),
-        segundoNombre: formData.segundoNombre.trim(),
-        primerApellido: formData.primerApellido.trim(),
-        segundoApellido: formData.segundoApellido.trim(),
-        email: formData.email.trim().toLowerCase(),
-        numTel: formData.numTel.trim(),
-        fotoPerfil: formData.fotoPerfil,
-        rol: formData.rol,
-        IDSucursal: sucursalRef,
-        estado: formData.estado,
-        modoOscuro: formData.modoOscuro,
+      await setDoc(doc(db, "USUARIO", cred.user.uid), {
+        primerNombre: primerNombre.trim(),
+        segundoNombre: segundoNombre.trim(),
+        primerApellido: primerApellido.trim(),
+        segundoApellido: segundoApellido.trim(),
+        email: emailLimpio,
+        numTel: (numTel || "").trim(),
+        fotoPerfil: fotoPerfil || "",
+        rol: "Tecnico",
+        IDSucursal: doc(db, "SUCURSAL", sucursalId),
+        estado,
+        modoOscuro: false,
         fechaRegistro: new Date(),
+      mustChangePassword: true,
       });
 
-      Alert.alert("Éxito", "Usuario registrado correctamente", [
-        {
-          text: "OK",
-          onPress: () => {
-            // Resetear formulario
-            setFormData({
-              primerNombre: "",
-              segundoNombre: "",
-              primerApellido: "",
-              segundoApellido: "",
-              email: "",
-              password: "",
-              confirmPassword: "",
-              numTel: "",
-              fotoPerfil: "",
-              rol: "Tecnico",
-              IDSucursal: null,
-              sucursalNombre: "",
+      Alert.alert(
+        "Éxito",
+        "Cuenta creada con contraseña temporal. El usuario deberá cambiarla al iniciar sesión.",
+        [
+          {
+            text: "OK",
+            onPress: () => {
+              // Resetear formulario
+              setFormData({
+                primerNombre: "",
+                segundoNombre: "",
+                primerApellido: "",
+                segundoApellido: "",
+                email: "",
+                numTel: "",
+                fotoPerfil: "",
+                rol: "Tecnico",
+                IDSucursal: null,
+                sucursalNombre: "",
               estado: "Activo",
               modoOscuro: false,
             });
@@ -316,8 +322,7 @@ const RegistrarUsuariosGestor = ({ navigation }) => {
         errorMessage = "El email ya está en uso";
       } else if (error.code === "auth/invalid-email") {
         errorMessage = "El email no es válido";
-      } else if (error.code === "auth/weak-password") {
-        errorMessage = "La contraseña es muy débil";
+      
       }
 
       Alert.alert("Error", errorMessage);
@@ -446,29 +451,7 @@ const RegistrarUsuariosGestor = ({ navigation }) => {
                 />
               </View>
 
-              <View style={styles.fieldContainer}>
-                <Text style={profile.modoOscuro === true ? styles.labelOscuro : styles.labelClaro}>Contraseña *</Text>
-                <TextInput
-                  style={profile.modoOscuro === true ? styles.inputOscuro : styles.inputClaro}
-                  value={formData.password}
-                  onChangeText={(text) => setFormData((prev) => ({ ...prev, password: text }))}
-                  placeholderTextColor={profile.modoOscuro ? "#D1D1D1" : "black"}
-                  placeholder="Mínimo 6 caracteres"
-                  secureTextEntry
-                />
-              </View>
-
-              <View style={styles.fieldContainer}>
-                <Text style={profile.modoOscuro === true ? styles.labelOscuro : styles.labelClaro}>Confirmar Contraseña *</Text>
-                <TextInput
-                  style={profile.modoOscuro === true ? styles.inputOscuro : styles.inputClaro}
-                  value={formData.confirmPassword}
-                  onChangeText={(text) => setFormData((prev) => ({ ...prev, confirmPassword: text }))}
-                  placeholderTextColor={profile.modoOscuro ? "#D1D1D1" : "black"}
-                  placeholder="Repita la contraseña"
-                  secureTextEntry
-                />
-              </View>
+              
 
             <View style={{ marginTop: 20 }}>
               <Text style={[styles.titulo, { color: profile.modoOscuro === true ? "white" : 'black' }]}>Datos de contacto</Text>
@@ -538,25 +521,34 @@ const RegistrarUsuariosGestor = ({ navigation }) => {
               </View>
             </View>
 
-            <View style={styles.fieldContainer}>
-              <Text style={profile.modoOscuro === true ? styles.labelOscuro : styles.labelClaro}>Sucursal *</Text>
-              <TouchableOpacity
-                style={profile.modoOscuro === true ? styles.inputOscuro : styles.inputClaro}
-                onPress={() => setShowSucursalModal(true)}
-              >
-                <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                  <View>
-                    <Text style={profile.modoOscuro === true ? styles.selectButtonTextOscuro : styles.selectButtonTextClaro}>
-                      {formData.sucursalNombre || "Seleccione una sucursal"}
-                    </Text>
+           {!isAdmin ? (
+              <View style={{ marginTop: 8 }}>
+                <Text style={{ fontWeight: '700', color: profile?.modoOscuro ? '#D1D5DB' : '#374151' }}>Sucursal</Text>
+                <Text style={{ marginTop: 4, color: profile?.modoOscuro ? '#A1A6AD' : '#6B7280' }}>
+                  Se asignará automáticamente a tu sucursal.
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.fieldContainer}>
+                <Text style={profile.modoOscuro === true ? styles.labelOscuro : styles.labelClaro}>Sucursal *</Text>
+                <TouchableOpacity
+                  style={profile.modoOscuro === true ? styles.inputOscuro : styles.inputClaro}
+                  onPress={() => setShowSucursalModal(true)}
+                >
+                  <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                    <View>
+                      <Text style={profile.modoOscuro === true ? styles.selectButtonTextOscuro : styles.selectButtonTextClaro}>
+                        {formData.sucursalNombre || "Seleccione una sucursal"}
+                      </Text>
+                    </View>
+                    <View style={{ marginRight: 10 }}>
+                      <Feather name="chevron-down" size={20} color="#666" />
+                    </View>
                   </View>
-                  <View style={{ marginRight: 10 }}>
-                    <Feather name="chevron-down" size={20} color="#666" />
-                  </View>
-                </View>
 
-              </TouchableOpacity>
-            </View>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
 
           {/* Botón de registro */}
