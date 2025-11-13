@@ -651,115 +651,126 @@ export default function PerfilShared({ navigation }) {
         </View>
       </View>
 
-       <View style={[styles.cardCombined, { marginTop: 16 }]}>
-        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-          <Text style={styles.sectionTitle}>Contraseña</Text>
-          <TouchableOpacity onPress={() => setShowChangePwd((v) => !v)} style={styles.changePwdToggle}>
-            <Text style={{ color: theme.primary, fontWeight: "700" }}>
-              {showChangePwd ? "Cancelar" : "Cambiar contraseña"}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {showChangePwd && (
-          <View>
-            <View style={styles.fieldContainer}>
-              <Text style={styles.label}>Contraseña actual</Text>
-              <TextInput
-                style={styles.input}
-                value={pwdCurrent}
-                onChangeText={setPwdCurrent}
-                secureTextEntry
-                placeholder="Tu contraseña actual"
-                placeholderTextColor={theme.placeholder}
-              />
-            </View>
-            <View style={styles.fieldContainer}>
-              <Text style={styles.label}>Nueva contraseña</Text>
-              <TextInput
-                style={styles.input}
-                value={pwdNew}
-                onChangeText={setPwdNew}
-                secureTextEntry
-                placeholder="Mínimo 6 caracteres"
-                placeholderTextColor={theme.placeholder}
-              />
-            </View>
-            <View style={styles.fieldContainer}>
-              <Text style={styles.label}>Repite nueva contraseña</Text>
-              <TextInput
-                style={styles.input}
-                value={pwdNew2}
-                onChangeText={setPwdNew2}
-                secureTextEntry
-                placeholder="Confirma tu nueva contraseña"
-                placeholderTextColor={theme.placeholder}
-              />
-            </View>
-
+       <View style={styles.form}>
+        <View style={[styles.cardCombined, styles.passwordCard]}>
+          <View style={styles.passwordHeaderRow}>
+            <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Seguridad</Text>
             <TouchableOpacity
-              style={[styles.saveButton, changingPwd && styles.saveButtonDisabled]}
-              disabled={changingPwd}
-              onPress={async () => {
-                if (!pwdCurrent || !pwdNew || !pwdNew2) {
-                  Toast.show({
-                    type: "appError",
-                    text1: "Completa los campos",
-                    text2: "Llena las 3 casillas.",
-                  });
-                  return;
-                }
-                if (pwdNew.length < 6) {
-                  Toast.show({
-                    type: "appError",
-                    text1: "Contraseña débil",
-                    text2: "Mínimo 6 caracteres.",
-                  });
-                  return;
-                }
-                if (pwdNew !== pwdNew2) {
-                  Toast.show({
-                    type: "appError",
-                    text1: "No coinciden",
-                    text2: "Repite la nueva contraseña correctamente.",
-                  });
-                  return;
-                }
-
-                setChangingPwd(true);
-                try {
-                  const auth = getAuth();
-                  const user = auth.currentUser;
-                  if (!user || !profile?.email) {
-                    throw new Error("No authenticated user");
-                  }
-                  const cred = EmailAuthProvider.credential(profile.email, pwdCurrent);
-                  await reauthenticateWithCredential(user, cred);
-                  await updatePassword(user, pwdNew);
-                  Toast.show({
-                    type: "appSuccess",
-                    text1: "Contraseña actualizada",
-                    text2: "Tu contraseña fue cambiada.",
-                  });
-                  setPwdCurrent("");
-                  setPwdNew("");
-                  setPwdNew2("");
-                  setShowChangePwd(false);
-                } catch (e) {
-                  Toast.show({
-                    type: "appError",
-                    text1: "Error",
-                    text2: "Verifica tu contraseña actual.",
-                  });
-                } finally {
-                  setChangingPwd(false);
-                }
-              }}
+              onPress={() => setShowChangePwd((v) => !v)}
+              style={styles.changePwdToggle}
             >
-              {changingPwd ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveButtonText}>Actualizar contraseña</Text>}
+              <Text style={styles.changePwdToggleText}>
+                {showChangePwd ? "Cerrar" : "Editar contraseña"}
+              </Text>
             </TouchableOpacity>
           </View>
-        )}
+
+          {showChangePwd && (
+            <View>
+              <View style={styles.fieldContainer}>
+                <Text style={styles.label}>Contraseña actual</Text>
+                <TextInput
+                  style={styles.input}
+                  value={pwdCurrent}
+                  onChangeText={setPwdCurrent}
+                  secureTextEntry
+                  placeholder="Tu contraseña actual"
+                  placeholderTextColor={theme.placeholder}
+                />
+              </View>
+
+              <View style={styles.fieldContainer}>
+                <Text style={styles.label}>Nueva contraseña</Text>
+                <TextInput
+                  style={styles.input}
+                  value={pwdNew}
+                  onChangeText={setPwdNew}
+                  secureTextEntry
+                  placeholder="Mínimo 6 caracteres"
+                  placeholderTextColor={theme.placeholder}
+                />
+              </View>
+
+              <View style={styles.fieldContainer}>
+                <Text style={styles.label}>Repite nueva contraseña</Text>
+                <TextInput
+                  style={styles.input}
+                  value={pwdNew2}
+                  onChangeText={setPwdNew2}
+                  secureTextEntry
+                  placeholder="Confirma tu nueva contraseña"
+                  placeholderTextColor={theme.placeholder}
+                />
+              </View>
+
+              <TouchableOpacity
+                style={[styles.saveButton, changingPwd && styles.saveButtonDisabled]}
+                disabled={changingPwd}
+                onPress={async () => {
+                  if (!pwdCurrent || !pwdNew || !pwdNew2) {
+                    Toast.show({
+                      type: "appError",
+                      text1: "Completa los campos",
+                      text2: "Llena las 3 casillas.",
+                    });
+                    return;
+                  }
+                  if (pwdNew.length < 6) {
+                    Toast.show({
+                      type: "appError",
+                      text1: "Contraseña débil",
+                      text2: "Mínimo 6 caracteres.",
+                    });
+                    return;
+                  }
+                  if (pwdNew !== pwdNew2) {
+                    Toast.show({
+                      type: "appError",
+                      text1: "No coinciden",
+                      text2: "Repite la nueva contraseña correctamente.",
+                    });
+                    return;
+                  }
+
+                  setChangingPwd(true);
+                  try {
+                    const auth = getAuth();
+                    const user = auth.currentUser;
+                    if (!user || !profile?.email) {
+                      throw new Error("No authenticated user");
+                    }
+                    const cred = EmailAuthProvider.credential(profile.email, pwdCurrent);
+                    await reauthenticateWithCredential(user, cred);
+                    await updatePassword(user, pwdNew);
+                    Toast.show({
+                      type: "appSuccess",
+                      text1: "Contraseña actualizada",
+                      text2: "Tu contraseña fue cambiada.",
+                    });
+                    setPwdCurrent("");
+                    setPwdNew("");
+                    setPwdNew2("");
+                    setShowChangePwd(false);
+                  } catch (e) {
+                    Toast.show({
+                      type: "appError",
+                      text1: "Error",
+                      text2: "Verifica tu contraseña actual.",
+                    });
+                  } finally {
+                    setChangingPwd(false);
+                  }
+                }}
+              >
+                {changingPwd ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.saveButtonText}>Guardar nueva contraseña</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
       </View>
 
       {/* Botones */}
@@ -967,14 +978,7 @@ function createStyles(theme) {
       color: theme.text,
       marginBottom: 14,
     },
-    changePwdToggle: {
-      paddingVertical: 8,
-      paddingHorizontal: 12,
-      borderRadius: 10,
-      backgroundColor: theme.chipBg,
-      borderWidth: 1,
-      borderColor: theme.chipBorder,
-    },
+    
     sectionDivider: {
       height: 1,
       backgroundColor: theme.divider,
@@ -1055,6 +1059,30 @@ function createStyles(theme) {
       color: "#fff",
       fontSize: 16,
       fontWeight: "600",
+    },
+    passwordCard: {
+      marginTop: 8,
+    },
+    passwordHeaderRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      marginBottom: 4,
+    },
+    changePwdToggle: {
+      paddingVertical: 8,
+      paddingHorizontal: 12,
+      borderRadius: 10,
+      backgroundColor: theme.chipBg,
+      borderWidth: 1,
+      borderColor: theme.chipBorder,
+      
+    },
+    changePwdToggleText: {
+      color: theme.primary,
+      fontWeight: "700",
+      fontSize: 14,
+
     },
   });
 }

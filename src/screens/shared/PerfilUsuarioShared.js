@@ -887,7 +887,7 @@ function createStyles(theme) {
     },
 
     saveButton: {
-      backgroundColor: theme.primary,
+      backgroundColor: theme.chipBg,
       marginHorizontal: 16,
       marginTop: 20,
       padding: 16,
@@ -900,7 +900,7 @@ function createStyles(theme) {
       elevation: 3,
     },
     saveButtonDisabled: { opacity: 0.6 },
-    saveButtonText: { color: "#fff", fontSize: 16, fontWeight: "600" },
+    saveButtonText: { color: theme.text, fontSize: 16, fontWeight: "600" },
 
     // Modales
     modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
