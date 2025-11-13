@@ -116,10 +116,16 @@ export default function PerfilUsuarioShared({ route, navigation }) {
     fechaRegistro: null,
   });
 
-  // Permisos: Gestor o Admin pueden editar perfiles ajenos
-  const canEdit =
-    currentUserProfile?.rol === "Gestor" ||
-    currentUserProfile?.rol === "Administrador";
+  const [originalUserData, setOriginalUserData] = useState(null);
+
+  const isAdmin = currentUserProfile?.rol === "Administrador";
+  const isGestor = currentUserProfile?.rol === "Gestor";
+  const isSelf = currentUserProfile?.id === userId;
+
+  const canEdit = isAdmin || isGestor;
+  const canEditSucursal = isAdmin;
+  const canEditRole = isAdmin || (isGestor && userData.rol !== "Administrador");
+  const roleOptions = isAdmin ? roles : ["Tecnico", "Gestor"];
 
   // Tema: usamos el modoOscuro del usuario logueado para coherencia global
   const theme = useMemo(
@@ -181,7 +187,7 @@ export default function PerfilUsuarioShared({ route, navigation }) {
           }
         }
 
-        setUserData({
+        const formattedData = {
           primerNombre: data.primerNombre || "",
           segundoNombre: data.segundoNombre || "",
           primerApellido: data.primerApellido || "",
@@ -199,7 +205,9 @@ export default function PerfilUsuarioShared({ route, navigation }) {
               ?.nombre ||
             "",
           fechaRegistro: data.fechaRegistro || null,
-        });
+        };
+        setUserData(formattedData);
+        setOriginalUserData(formattedData);
       } catch (e) {
         console.error("Error al cargar perfil:", e);
         Alert.alert("Error", "No se pudo cargar la información del perfil");
@@ -301,6 +309,45 @@ export default function PerfilUsuarioShared({ route, navigation }) {
   const handleSave = async () => {
     if (!userId) return;
 
+    if (!canEdit) {
+      Alert.alert("Permiso denegado", "No tienes permisos para editar este perfil");
+      return;
+    }
+
+    if (!canEditRole && originalUserData && userData.rol !== originalUserData.rol) {
+      Alert.alert("Acción no permitida", "No puedes modificar el rol de este usuario");
+      return;
+    }
+
+    if (!canEditSucursal && originalUserData && userData.IDSucursal !== originalUserData.IDSucursal) {
+      Alert.alert("Acción no permitida", "No puedes cambiar la sucursal");
+      return;
+    }
+
+    if (isGestor) {
+      if (
+        originalUserData &&
+        !roleOptions.includes(userData.rol) &&
+        userData.rol !== originalUserData.rol
+      ) {
+        Alert.alert("Acción no permitida", "No tienes permiso para asignar este rol");
+        return;
+      }
+
+      if (
+        originalUserData?.rol === "Administrador" &&
+        userData.rol !== originalUserData.rol
+      ) {
+        Alert.alert("Acción no permitida", "No puedes cambiar el rol de un Administrador");
+        return;
+      }
+
+      if (isSelf && originalUserData?.rol === "Gestor" && userData.rol === "Tecnico") {
+        Alert.alert("Acción no permitida", "No puedes cambiar tu propio rol a Técnico");
+        return;
+      }
+    }
+
     if (!userData.primerNombre.trim() || !userData.primerApellido.trim()) {
       Alert.alert("Error", "El nombre y apellido son obligatorios");
       return;
@@ -330,6 +377,7 @@ export default function PerfilUsuarioShared({ route, navigation }) {
 
       Alert.alert("Éxito", "Perfil actualizado correctamente");
       setIsEditing(false);
+      setOriginalUserData({ ...userData });
     } catch (e) {
       console.error("Error al guardar perfil:", e);
       Alert.alert("Error", "No se pudo actualizar el perfil");
@@ -533,7 +581,7 @@ export default function PerfilUsuarioShared({ route, navigation }) {
           <View style={styles.fieldRow}>
             <View style={[styles.fieldContainer, styles.fieldHalf]}>
               <Text style={styles.label}>Rol</Text>
-              {canEdit && isEditing ? (
+              {isEditing && canEditRole ? (
                 <TouchableOpacity
                   style={styles.selectButton}
                   onPress={() => setShowRolModal(true)}
@@ -578,7 +626,7 @@ export default function PerfilUsuarioShared({ route, navigation }) {
           {/* Sucursal */}
           <View style={styles.fieldContainer}>
             <Text style={styles.label}>Sucursal</Text>
-            {canEdit && isEditing ? (
+            {isEditing && canEditSucursal ? (
               <TouchableOpacity
                 style={styles.selectButton}
                 onPress={() => setShowSucursalModal(true)}
@@ -634,11 +682,18 @@ export default function PerfilUsuarioShared({ route, navigation }) {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Seleccionar Rol</Text>
             <ScrollView style={styles.modalScroll}>
-              {roles.map((rol) => (
+               {roleOptions.map((rol) => (
                 <TouchableOpacity
                   key={rol}
                   style={styles.modalOption}
                   onPress={() => {
+                    if (isGestor && isSelf && originalUserData?.rol === "Gestor" && rol === "Tecnico") {
+                      Alert.alert(
+                        "Acción no permitida",
+                        "No puedes cambiar tu propio rol a Técnico"
+                      );
+                      return;
+                    }
                     setUserData((p) => ({ ...p, rol }));
                     setShowRolModal(false);
                   }}

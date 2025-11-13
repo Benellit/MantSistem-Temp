@@ -2,7 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   StyleSheet, Text, View, TouchableOpacity, ImageBackground,
   Pressable, Linking, Platform, StatusBar, Animated, Dimensions,
-  TextInput, ActivityIndicator, KeyboardAvoidingView, ScrollView
+  TextInput, ActivityIndicator, KeyboardAvoidingView, ScrollView,
+  Keyboard
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
@@ -74,6 +75,8 @@ function BottomSheetLogin({ visible, onClose }) {
   const SHEET_MAX = useMemo(() => Math.min(SCREEN_HEIGHT * 0.42, 640), []);
   const translateY = useRef(new Animated.Value(SHEET_MAX)).current;
   const backdrop   = useRef(new Animated.Value(0)).current;
+  const keyboardShift = useRef(new Animated.Value(0)).current;
+  const combinedTranslateY = Animated.add(translateY, keyboardShift);
 
   const [email, setEmail] = useState("");
   const [pwd, setPwd] = useState("");
@@ -94,6 +97,38 @@ function BottomSheetLogin({ visible, onClose }) {
       ]).start();
     }
   }, [visible]);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow";
+    const hideEvent = Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide";
+
+    const handleShow = (e) => {
+      const height = e?.endCoordinates?.height ?? 0;
+      const duration = e?.duration ?? 250;
+      Animated.timing(keyboardShift, {
+        toValue: -height,
+        duration,
+        useNativeDriver: true,
+      }).start();
+    };
+
+    const handleHide = (e) => {
+      const duration = e?.duration ?? 200;
+      Animated.timing(keyboardShift, {
+        toValue: 0,
+        duration,
+        useNativeDriver: true,
+      }).start();
+    };
+
+    const showSub = Keyboard.addListener(showEvent, handleShow);
+    const hideSub = Keyboard.addListener(hideEvent, handleHide);
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, [keyboardShift]);
 
   const mapAuthError = (e) => {
     const c = e?.code || "";
@@ -133,12 +168,10 @@ function BottomSheetLogin({ visible, onClose }) {
         <Pressable style={{ flex: 1 }} onPress={onClose} />
       </Animated.View>
 
-      <Animated.View style={[styles.sheet, { height: SHEET_MAX, transform: [{ translateY }] }]}>
+      <Animated.View style={[styles.sheet, { height: SHEET_MAX, transform: [{ translateY: combinedTranslateY }] }]}>
         <View style={styles.sheetTopBar}>
           <View style={styles.handle} />
-          <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
-            <Feather name="x" size={20} color="#111827" />
-          </TouchableOpacity>
+          
         </View>
 
         <ScrollView
