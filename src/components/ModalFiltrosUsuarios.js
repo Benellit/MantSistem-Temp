@@ -10,7 +10,12 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 
 
 
-const ROLES = ["Administrador", "Gestor", "Tecnico"];   // 👈 sin acentos para ser consistente
+const ROLE_OPTIONS = [
+  { key: "Administrador", label: "Admin", icon: "shield-outline" },
+  { key: "Gestor", label: "Gestor", icon: "briefcase-outline" },
+  { key: "Tecnico", label: "Técnico", icon: "construct-outline" },
+];
+
 const ESTADOS = ["Activo", "Inactivo"];
 
 const DEFAULT_APPLIED = { sucursal: null, estado: null, roles: [] };
@@ -201,11 +206,7 @@ const ModalFiltrosUsuarios = ({
             </Text>
 
             <View style={styles.roleGrid}>
-                {[
-                { key: "Admin", icon: "shield-outline" },
-                { key: "Gestor", icon: "briefcase-outline" },
-                { key: "Tecnico", icon: "construct-outline" },
-                ].map(({ key, icon }) => {
+                {ROLE_OPTIONS.map(({ key, label, icon }) => {
                 const on = (draft.roles || []).includes(key);
                 return (
                     <TouchableOpacity
@@ -238,7 +239,7 @@ const ModalFiltrosUsuarios = ({
                             : (profile.modoOscuro ? styles.roleTextOffDark : styles.roleTextOffLight)
                         ]}
                     >
-                        {key}
+                         {label ?? key}
                     </Text>
                     </TouchableOpacity>
                 );
