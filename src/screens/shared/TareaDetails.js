@@ -134,7 +134,7 @@ const TareaDetails = ({ route, navigation }) => {
 
             console.log("✅ Evidencias guardadas en Firestore")
             Toast.show({
-                type: "success",
+                type: "appSuccess",
                 text1: "Evidencias guardadas",
                 text2: "Las fotografías se guardaron correctamente",
             })
@@ -143,7 +143,7 @@ const TareaDetails = ({ route, navigation }) => {
         } catch (error) {
             console.error("❌ Error al guardar evidencias:", error)
             Toast.show({
-                type: "error",
+                type: "appError",
                 text1: "Error",
                 text2: "No se pudieron guardar las evidencias",
             })
@@ -153,7 +153,7 @@ const TareaDetails = ({ route, navigation }) => {
     const saveReporte = async () => {
         if (!asuntoReporte.trim() || !descripcionReporte.trim()) {
             Toast.show({
-                type: "error",
+                type: "appError",
                 text1: "Campos incompletos",
                 text2: "Por favor completa todos los campos",
             })
@@ -179,7 +179,7 @@ const TareaDetails = ({ route, navigation }) => {
             })
 
             Toast.show({
-                type: "success",
+                type: "appSuccess",
                 text1: "Reporte guardado",
                 text2: "El reporte se registró correctamente",
             })
@@ -192,7 +192,7 @@ const TareaDetails = ({ route, navigation }) => {
         } catch (error) {
             console.error("❌ Error al guardar reporte:", error)
             Toast.show({
-                type: "error",
+                type: "appError",
                 text1: "Error",
                 text2: "No se pudo guardar el reporte",
             })
@@ -203,7 +203,11 @@ const TareaDetails = ({ route, navigation }) => {
         try {
             const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
             if (status !== "granted") {
-                Alert.alert("Permiso requerido", "Necesitas otorgar permiso para acceder a la galería.")
+                Toast.show({
+                    type: "appError",
+                    text1: "Permiso requerido",
+                    text2: "Necesitas otorgar permiso para acceder a la galería.",
+                })
                 return
             }
 
@@ -226,7 +230,7 @@ const TareaDetails = ({ route, navigation }) => {
             }
 
             Toast.show({
-                type: "info",
+                type: "appInfo",
                 text1: "Subiendo imágenes...",
                 text2: "Por favor espera",
             })
@@ -256,7 +260,7 @@ const TareaDetails = ({ route, navigation }) => {
             }
 
             Toast.show({
-                type: "success",
+                type: "appSuccess",
                 text1: "Éxito",
                 text2: `${urls.length} imagen(es) subida(s) correctamente`,
             })
@@ -267,7 +271,7 @@ const TareaDetails = ({ route, navigation }) => {
         } catch (err) {
             console.error("❌ Error al subir imágenes:", err.response?.data || err.message)
             Toast.show({
-                type: "error",
+                type: "appError",
                 text1: "Error",
                 text2: "No se pudieron subir las imágenes",
             })
@@ -297,7 +301,7 @@ const TareaDetails = ({ route, navigation }) => {
                         console.log("✅ Imagen eliminada correctamente")
 
                         Toast.show({
-                            type: "success",
+                            type: "appSuccess",
                             text1: "Imagen eliminada",
                             text2: "La imagen se eliminó correctamente",
                         })
@@ -306,7 +310,7 @@ const TareaDetails = ({ route, navigation }) => {
                     } catch (error) {
                         console.error("❌ Error al eliminar evidencia:", error)
                         Toast.show({
-                            type: "error",
+                            type: "appError",
                             text1: "Error",
                             text2: "No se pudo eliminar la imagen",
                         })
@@ -559,7 +563,7 @@ const TareaDetails = ({ route, navigation }) => {
         } catch (error) {
             console.error("❌ Error cargando datos:", error)
             Toast.show({
-                type: "error",
+                type: "appError",
                 text1: "Error",
                 text2: "No se pudieron cargar los datos",
             })
@@ -704,7 +708,7 @@ const TareaDetails = ({ route, navigation }) => {
                             cambio = true
                             setVisibleModal(false)
                             Toast.show({
-                                type: "success",
+                                type: "appSuccess",
                                 text1: "Tarea En Proceso",
                                 text2: "¡Buen trabajo, sigue así!",
                             })
@@ -715,7 +719,7 @@ const TareaDetails = ({ route, navigation }) => {
                         if (modalOupdate) {
                             if (!evidenciasTarea || evidenciasTarea.length === 0) {
                                 Toast.show({
-                                    type: "error",
+                                    type: "appError",
                                     text1: "Evidencia requerida",
                                     text2: "Debes adjuntar al menos una evidencia fotográfica antes de completar la tarea",
                                 })

@@ -3,6 +3,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { addDoc, collection, getFirestore, Timestamp } from "firebase/firestore";
 import { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import Toast from "react-native-toast-message";
 import appFirebase from '../../credenciales/Credenciales';
 import { useAuth } from "../login/AuthContext";
 
@@ -21,23 +22,43 @@ const RegistrarSucursalesAdmin = ({ navigation }) => {
     // Validar formulario
     const validarFormulario = () => {
         if (!nombre.trim()) {
-            Alert.alert("Error", "El nombre de la sucursal es obligatorio");
+            Toast.show({
+                type: "appError",
+                text1: "Error",
+                text2: "El nombre de la sucursal es obligatorio",
+            });
             return false;
         }
         if (!dirCalle.trim()) {
-            Alert.alert("Error", "La calle es obligatoria");
+            Toast.show({
+                type: "appError",
+                text1: "Error",
+                text2: "La calle es obligatoria",
+            });
             return false;
         }
         if (!dirColonia.trim()) {
-            Alert.alert("Error", "La colonia es obligatoria");
+            Toast.show({
+                type: "appError",
+                text1: "Error",
+                text2: "La colonia es obligatoria",
+            });
             return false;
         }
         if (!dirCP.trim()) {
-            Alert.alert("Error", "El código postal es obligatorio");
+            Toast.show({
+                type: "appError",
+                text1: "Error",
+                text2: "El código postal es obligatorio",
+            });
             return false;
         }
         if (dirCP.length !== 5 || isNaN(dirCP)) {
-            Alert.alert("Error", "El código postal debe tener 5 dígitos");
+            Toast.show({
+                type: "appError",
+                text1: "Error",
+                text2: "El código postal debe tener 5 dígitos",
+            });
             return false;
         }
         return true;
@@ -61,16 +82,12 @@ const RegistrarSucursalesAdmin = ({ navigation }) => {
 
             await addDoc(collection(db, "SUCURSAL"), nuevaSucursal);
 
-            Alert.alert(
-                "¡Éxito!",
-                "Sucursal registrada correctamente",
-                [
-                    {
-                        text: "OK",
-                        onPress: () => navigation.goBack()
-                    }
-                ]
-            );
+            Toast.show({
+                type: "appSuccess",
+                text1: "¡Éxito!",
+                text2: "Sucursal registrada correctamente",
+            });
+            navigation.goBack();
 
             // Limpiar formulario
             setNombre("");
@@ -80,7 +97,11 @@ const RegistrarSucursalesAdmin = ({ navigation }) => {
 
         } catch (error) {
             console.error("Error al registrar sucursal:", error);
-            Alert.alert("Error", "No se pudo registrar la sucursal. Intenta de nuevo.");
+            Toast.show({
+                type: "appError",
+                text1: "Error",
+                text2: "No se pudo registrar la sucursal. Intenta de nuevo.",
+            });
         } finally {
             setLoading(false);
         }

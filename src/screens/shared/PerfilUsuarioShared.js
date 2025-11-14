@@ -26,6 +26,7 @@ import Feather from "@expo/vector-icons/Feather";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useAuth } from "../login/AuthContext";
+import Toast from "react-native-toast-message"
 
 const db = getFirestore(appFirebase);
 
@@ -159,8 +160,7 @@ export default function PerfilUsuarioShared({ route, navigation }) {
         const ref = doc(db, "USUARIO", userId);
         const userDoc = await getDoc(ref);
         if (!userDoc.exists()) {
-          Alert.alert("Error", "Usuario no encontrado");
-          navigation.goBack();
+        Toast.show({ type: "appError", text1: "Error", text2: "Usuario no encontrado" });          navigation.goBack();
           return;
         }
 
@@ -210,7 +210,11 @@ export default function PerfilUsuarioShared({ route, navigation }) {
         setOriginalUserData(formattedData);
       } catch (e) {
         console.error("Error al cargar perfil:", e);
-        Alert.alert("Error", "No se pudo cargar la información del perfil");
+        Toast.show({
+          type: "appError",
+          text1: "Error",
+          text2: "No se pudo cargar la información del perfil",
+        });
       } finally {
         setLoading(false);
       }
@@ -248,7 +252,11 @@ export default function PerfilUsuarioShared({ route, navigation }) {
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== "granted") {
-        Alert.alert("Permiso denegado", "Se necesita permiso para acceder a la galería");
+        Toast.show({
+          type: "appError",
+          text1: "Permiso denegado",
+          text2: "Se necesita permiso para acceder a la galería",
+        });
         return;
       }
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -261,11 +269,15 @@ export default function PerfilUsuarioShared({ route, navigation }) {
         setUploadingImage(true);
         const url = await uploadImageToCloudinary(result.assets[0].uri);
         setUserData((p) => ({ ...p, fotoPerfil: url }));
-        Alert.alert("Éxito", "Imagen cargada correctamente");
+        Toast.show({ type: "appSuccess", text1: "Éxito", text2: "Imagen cargada correctamente" });
       }
     } catch (e) {
       console.error("Error seleccionando imagen:", e);
-      Alert.alert("Error", "No se pudo cargar la imagen");
+      Toast.show({
+        type: "appError",
+        text1: "Error",
+        text2: "No se pudo cargar la imagen",
+      });
     } finally {
       setUploadingImage(false);
     }
@@ -275,7 +287,11 @@ export default function PerfilUsuarioShared({ route, navigation }) {
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== "granted") {
-        Alert.alert("Permiso denegado", "Se necesita permiso para acceder a la cámara");
+        Toast.show({
+          type: "appError",
+          text1: "Permiso denegado",
+          text2: "Se necesita permiso para acceder a la cámara",
+        });
         return;
       }
       const result = await ImagePicker.launchCameraAsync({
@@ -287,11 +303,15 @@ export default function PerfilUsuarioShared({ route, navigation }) {
         setUploadingImage(true);
         const url = await uploadImageToCloudinary(result.assets[0].uri);
         setUserData((p) => ({ ...p, fotoPerfil: url }));
-        Alert.alert("Éxito", "Foto tomada correctamente");
+        Toast.show({ type: "appSuccess", text1: "Éxito", text2: "Foto tomada correctamente" });
       }
     } catch (e) {
       console.error("Error tomando foto:", e);
-      Alert.alert("Error", "No se pudo tomar la foto");
+      Toast.show({
+        type: "appError",
+        text1: "Error",
+        text2: "No se pudo tomar la foto",
+      });
     } finally {
       setUploadingImage(false);
     }
@@ -310,17 +330,29 @@ export default function PerfilUsuarioShared({ route, navigation }) {
     if (!userId) return;
 
     if (!canEdit) {
-      Alert.alert("Permiso denegado", "No tienes permisos para editar este perfil");
+      Toast.show({
+        type: "appError",
+        text1: "Permiso denegado",
+        text2: "No tienes permisos para editar este perfil",
+      });
       return;
     }
 
     if (!canEditRole && originalUserData && userData.rol !== originalUserData.rol) {
-      Alert.alert("Acción no permitida", "No puedes modificar el rol de este usuario");
+      Toast.show({
+        type: "appError",
+        text1: "Acción no permitida",
+        text2: "No puedes modificar el rol de este usuario",
+      });
       return;
     }
 
     if (!canEditSucursal && originalUserData && userData.IDSucursal !== originalUserData.IDSucursal) {
-      Alert.alert("Acción no permitida", "No puedes cambiar la sucursal");
+      Toast.show({
+        type: "appError",
+        text1: "Acción no permitida",
+        text2: "No puedes cambiar la sucursal",
+      });
       return;
     }
 
@@ -330,7 +362,11 @@ export default function PerfilUsuarioShared({ route, navigation }) {
         !roleOptions.includes(userData.rol) &&
         userData.rol !== originalUserData.rol
       ) {
-        Alert.alert("Acción no permitida", "No tienes permiso para asignar este rol");
+        Toast.show({
+          type: "appError",
+          text1: "Acción no permitida",
+          text2: "No tienes permiso para asignar este rol",
+        });
         return;
       }
 
@@ -338,22 +374,38 @@ export default function PerfilUsuarioShared({ route, navigation }) {
         originalUserData?.rol === "Administrador" &&
         userData.rol !== originalUserData.rol
       ) {
-        Alert.alert("Acción no permitida", "No puedes cambiar el rol de un Administrador");
+        Toast.show({
+          type: "appError",
+          text1: "Acción no permitida",
+          text2: "No puedes cambiar el rol de un Administrador",
+        });
         return;
       }
 
       if (isSelf && originalUserData?.rol === "Gestor" && userData.rol === "Tecnico") {
-        Alert.alert("Acción no permitida", "No puedes cambiar tu propio rol a Técnico");
+        Toast.show({
+          type: "appError",
+          text1: "Acción no permitida",
+          text2: "No puedes cambiar tu propio rol a Técnico",
+        });
         return;
       }
     }
 
     if (!userData.primerNombre.trim() || !userData.primerApellido.trim()) {
-      Alert.alert("Error", "El nombre y apellido son obligatorios");
+      Toast.show({
+        type: "appError",
+        text1: "Error",
+        text2: "El nombre y apellido son obligatorios",
+      });
       return;
     }
     if (!userData.IDSucursal) {
-      Alert.alert("Error", "Debe seleccionar una sucursal");
+      Toast.show({
+        type: "appError",
+        text1: "Error",
+        text2: "Debe seleccionar una sucursal",
+      });
       return;
     }
 
@@ -375,12 +427,20 @@ export default function PerfilUsuarioShared({ route, navigation }) {
         // No forzamos modoOscuro del usuario objetivo desde aquí
       });
 
-      Alert.alert("Éxito", "Perfil actualizado correctamente");
+      Toast.show({
+        type: "appSuccess",
+        text1: "Éxito",
+        text2: "Perfil actualizado correctamente",
+      });
       setIsEditing(false);
       setOriginalUserData({ ...userData });
     } catch (e) {
       console.error("Error al guardar perfil:", e);
-      Alert.alert("Error", "No se pudo actualizar el perfil");
+      Toast.show({
+        type: "appError",
+        text1: "Error",
+        text2: "No se pudo actualizar el perfil",
+      });
     } finally {
       setSaving(false);
     }
@@ -688,10 +748,11 @@ export default function PerfilUsuarioShared({ route, navigation }) {
                   style={styles.modalOption}
                   onPress={() => {
                     if (isGestor && isSelf && originalUserData?.rol === "Gestor" && rol === "Tecnico") {
-                      Alert.alert(
-                        "Acción no permitida",
-                        "No puedes cambiar tu propio rol a Técnico"
-                      );
+                      Toast.show({
+                        type: "appError",
+                        text1: "Acción no permitida",
+                        text2: "No puedes cambiar tu propio rol a Técnico",
+                      });
                       return;
                     }
                     setUserData((p) => ({ ...p, rol }));

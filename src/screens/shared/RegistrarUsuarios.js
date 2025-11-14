@@ -104,7 +104,11 @@ const RegistrarUsuariosGestor = ({ navigation }) => {
         setSucursales(sucursalesData);
       } catch (error) {
         console.error("Error cargando sucursales:", error);
-        Alert.alert("Error", "No se pudieron cargar las sucursales");
+        Toast.show({
+          type: "appError",
+          text1: "Error",
+          text2: "No se pudieron cargar las sucursales",
+        });
       } finally {
         setLoadingSucursales(false);
       }
@@ -178,7 +182,11 @@ const RegistrarUsuariosGestor = ({ navigation }) => {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
       if (status !== "granted") {
-        Alert.alert("Permiso denegado", "Se necesita permiso para acceder a la galería");
+        Toast.show({
+          type: "appError",
+          text1: "Permiso denegado",
+          text2: "Se necesita permiso para acceder a la galería",
+        });
         return;
       }
 
@@ -193,11 +201,19 @@ const RegistrarUsuariosGestor = ({ navigation }) => {
         setUploadingImage(true);
         const imageUrl = await uploadImageToCloudinary(result.assets[0].uri);
         setFormData((prev) => ({ ...prev, fotoPerfil: imageUrl }));
-        Alert.alert("Éxito", "Imagen cargada correctamente");
+        Toast.show({
+          type: "appSuccess",
+          text1: "Éxito",
+          text2: "Imagen cargada correctamente",
+        });
       }
     } catch (error) {
       console.error("Error seleccionando imagen:", error);
-      Alert.alert("Error", "No se pudo cargar la imagen");
+      Toast.show({
+        type: "appError",
+        text1: "Error",
+        text2: "No se pudo cargar la imagen",
+      });
     } finally {
       setUploadingImage(false);
     }
@@ -209,7 +225,11 @@ const RegistrarUsuariosGestor = ({ navigation }) => {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
 
       if (status !== "granted") {
-        Alert.alert("Permiso denegado", "Se necesita permiso para acceder a la cámara");
+        Toast.show({
+          type: "appError",
+          text1: "Permiso denegado",
+          text2: "Se necesita permiso para acceder a la cámara",
+        });
         return;
       }
 
@@ -223,11 +243,19 @@ const RegistrarUsuariosGestor = ({ navigation }) => {
         setUploadingImage(true);
         const imageUrl = await uploadImageToCloudinary(result.assets[0].uri);
         setFormData((prev) => ({ ...prev, fotoPerfil: imageUrl }));
-        Alert.alert("Éxito", "Foto tomada correctamente");
+       Toast.show({
+          type: "appSuccess",
+          text1: "Éxito",
+          text2: "Foto tomada correctamente",
+        });
       }
     } catch (error) {
       console.error("Error tomando foto:", error);
-      Alert.alert("Error", "No se pudo tomar la foto");
+      Toast.show({
+        type: "appError",
+        text1: "Error",
+        text2: "No se pudo tomar la foto",
+      });
     } finally {
       setUploadingImage(false);
     }
@@ -256,27 +284,46 @@ const RegistrarUsuariosGestor = ({ navigation }) => {
     );
   };
 
-  // Validar formulario
-  // Validar formulario
+// Validar formulario
 const validateForm = () => {
   if (!formData.primerNombre.trim()) {
-    Toast.show({ type: "error", text1: "Falta información", text2: "El primer nombre es obligatorio." });
+    Toast.show({
+      type: "appError",
+      text1: "Falta información",
+      text2: "El primer nombre es obligatorio.",
+    });
     return false;
   }
   if (!formData.primerApellido.trim()) {
-    Toast.show({ type: "error", text1: "Falta información", text2: "El primer apellido es obligatorio." });
+    Toast.show({
+      type: "appError",
+      text1: "Falta información",
+      text2: "El primer apellido es obligatorio.",
+    });
     return false;
   }
   if (!formData.email.trim()) {
-    Toast.show({ type: "error", text1: "Falta información", text2: "El correo electrónico es obligatorio." });
+    Toast.show({
+      type: "appError",
+      text1: "Falta información",
+      text2: "El correo electrónico es obligatorio.",
+    });
     return false;
-  }
+  } 
   if (!/\S+@\S+\.\S+/.test(formData.email)) {
-    Toast.show({ type: "error", text1: "Correo inválido", text2: "Ingresa un correo electrónico válido." });
+    Toast.show({
+      type: "appError",
+      text1: "Correo inválido",
+      text2: "Ingresa un correo electrónico válido.",
+    });
     return false;
   }
   if (isAdmin && !formData.IDSucursal) {
-    Toast.show({ type: "error", text1: "Falta información", text2: "Debe seleccionar una sucursal." });
+    Toast.show({
+      type: "appError",
+      text1: "Falta información",
+      text2: "Debe seleccionar una sucursal.",
+    });
     return false;
   }
   return true;
@@ -305,7 +352,11 @@ const validateForm = () => {
       : extractSucursalId(formData?.IDSucursal);
 
     if (!sucursalId) {
-      Toast.show({ type: "error", text1: "Error", text2: "No se pudo determinar la sucursal." });
+      Toast.show({
+        type: "appError",
+        text1: "Error",
+        text2: "No se pudo determinar la sucursal.",
+      });
       setLoading(false);
       return;
     }
@@ -354,7 +405,7 @@ const validateForm = () => {
     if (navigation?.goBack) navigation.goBack();
 
     Toast.show({
-      type: "success",
+      type: "appSuccess",
       text1: "Usuario registrado",
       text2: "Contraseña temporal: 123456",
     });
@@ -387,7 +438,7 @@ const validateForm = () => {
         try { await signOut(secondaryAuth); } catch (_) {}
 
         Toast.show({
-          type: "success",
+          type: "appSuccess",
           text1: "Usuario ya existía",
           text2: "Perfil completado en la base de datos.",
         });
@@ -406,7 +457,7 @@ const validateForm = () => {
       "No se pudo registrar el usuario";
 
     Toast.show({
-      type: "error",
+      type: "appError",
       text1: "Error al registrar",
       text2: errorMessage,
     });

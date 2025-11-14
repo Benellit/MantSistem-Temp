@@ -17,11 +17,19 @@ export default function CambiarContrasena({ route, navigation }) {
     if (loading) return;
 
     if (pass1.length < 6) {
-      Alert.alert("Error", "La contraseña debe tener al menos 6 caracteres.");
+      Toast.show({
+        type: "appError",
+        text1: "Error",
+        text2: "La contraseña debe tener al menos 6 caracteres.",
+      });
       return;
     }
     if (pass1 !== pass2) {
-      Alert.alert("Error", "Las contraseñas no coinciden.");
+      Toast.show({
+        type: "appError",
+        text1: "Error",
+        text2: "Las contraseñas no coinciden.",
+      });
       return;
     }
 
@@ -29,7 +37,11 @@ export default function CambiarContrasena({ route, navigation }) {
       setLoading(true);
       const auth = getAuth();
       if (!auth.currentUser) {
-        Alert.alert("Error", "No se encontró la sesión activa.");
+        Toast.show({
+          type: "appError",
+          text1: "Error",
+          text2: "No se encontró la sesión activa.",
+        });
         return;
       }
 
@@ -41,11 +53,15 @@ export default function CambiarContrasena({ route, navigation }) {
         await refreshProfile();
       }
 
-      Toast.show({ type: "success", text1: "Contraseña actualizada" });
+      Toast.show({ type: "appSuccess", text1: "Contraseña actualizada" });
       navigation.replace("Tabs");
     } catch (error) {
       console.error("Error actualizando contraseña:", error);
-      Alert.alert("Error", "No se pudo actualizar la contraseña. Inténtalo de nuevo.");
+      Toast.show({
+        type: "appError",
+        text1: "Error",
+        text2: "No se pudo actualizar la contraseña. Inténtalo de nuevo.",
+      });
     } finally {
       setLoading(false);
       setPass1("");
