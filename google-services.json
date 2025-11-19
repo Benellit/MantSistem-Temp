@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "904401074377",
+    "project_id": "sistemademantenimiento-60fbf",
+    "storage_bucket": "sistemademantenimiento-60fbf.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:904401074377:android:af7d8c9dbc3d30ef0b7518",
+        "android_client_info": {
+          "package_name": "com.benellit.maintely"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDiARsLHgm8M44pCZR8_xoe8H6O-g_mSqw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

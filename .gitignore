@@ -1,0 +1,55 @@
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+.expo-shared/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native credentials
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Firebase
+firebaseApp.js
+.firebase/
+.firebaserc
+google-services.json
+
+# Functions secrets
+functions/.env
+functions/.runtimeconfig.json
+
+# Expo EAS keys
+eas.json
+
+# Metro
+.metro-health-check*
+
+# Debug logs
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+*.log
+
+# macOS
+.DS_Store
+*.pem
+*.crash
+
+# Local env files
+.env
+.env*.local
+
+# IDE
+.vscode/
+.idea/
+
+# TypeScript
+*.tsbuildinfo
