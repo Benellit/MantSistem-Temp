@@ -1104,7 +1104,6 @@ function createStyles(theme) {
       color: theme.primary,
       fontWeight: "700",
       fontSize: 14,
-
     },
   });
 }

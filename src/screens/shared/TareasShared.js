@@ -4,11 +4,11 @@ import Feather from "@expo/vector-icons/Feather"
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6"
 import Ionicons from "@expo/vector-icons/Ionicons"
 import { LinearGradient } from "expo-linear-gradient"
-import { collection, collectionGroup, doc, getDoc, getDocs, getFirestore, orderBy, query, where, } from "firebase/firestore"
+import { collection, collectionGroup, doc, getDoc, getDocs, getFirestore, orderBy, query, updateDoc, where } from "firebase/firestore"
 import { useEffect, useState } from "react"
 import { ActivityIndicator, Dimensions, Image, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, } from "react-native"
-import ModalFiltros from "../../components/ModalFiltros"
 import BotonRegistrar from "../../components/BotonRegistrar"
+import ModalFiltros from "../../components/ModalFiltros"
 import appFirebase from "../../credenciales/Credenciales"
 import { useAuth } from "../login/AuthContext"
 
@@ -88,7 +88,6 @@ export default function TareasShared({ navigation }) {
             } else if (profile.rol === "Tecnico") {
                 const userRef = doc(db, "USUARIO", profile.id);
 
-                // Buscar en todas las subcolecciones Técnicos
                 const q = query(
                     collectionGroup(db, "Tecnicos"),
                     where("IDUsuario", "==", userRef)
@@ -114,9 +113,7 @@ export default function TareasShared({ navigation }) {
                             tecnico: { id: docSnap.id, ...tecnicoData }
                         };
 
-                        // ---- FILTROS EXISTENTES ----
                         if (filtros.estado && tareaData.estado !== filtros.estado) return null;
-
                         if (filtros.prioridad && tareaData.prioridad !== filtros.prioridad) return null;
 
                         if (filtros.sucursal) {
@@ -132,12 +129,44 @@ export default function TareasShared({ navigation }) {
                     })
                 );
 
-                // Eliminar nulls de filtros
                 tareaList = tareaList.filter((t) => t !== null);
             } else {
                 navigation.navigate("Tabs")
                 return
             }
+
+            // ──────────────────────────────────────────────
+            // 🔥 ACTUALIZAR TAREAS VENCIDAS A "No Entregada"
+            // ──────────────────────────────────────────────
+            const ahora = new Date()
+
+            await Promise.all(
+                tareaList.map(async (t) => {
+                    if (
+                        !t.fechaEntrega ||
+                        t.estado === "No Entregada" ||
+                        t.estado === "Completada" ||
+                        t.estado === "Revisada"
+                    ) return
+
+                    const fecha = t.fechaEntrega.toDate ? t.fechaEntrega.toDate() : new Date(t.fechaEntrega)
+
+                    if (fecha < ahora) {
+                        // Actualizar estado en memoria
+                        t.estado = "No Entregada"
+
+                        // Actualizar Firestore
+                        try {
+                            const ref = doc(db, "TAREA", t.id)
+                            await updateDoc(ref, { estado: "No Entregada" })
+                        } catch (err) {
+                            console.error("Error actualizando estado vencido:", err)
+                        }
+                    }
+                })
+            )
+            // ──────────────────────────────────────────────
+
 
             const tareasConTodo = await Promise.all(
                 tareaList.map(async (tarea) => {
@@ -200,10 +229,10 @@ export default function TareasShared({ navigation }) {
                     return {
                         ...tarea,
                         tecnicos,
-                        totalReportes: totalReportes,
+                        totalReportes,
                         totalEvidencias: eviSnap.size,
                         totalFotografias: totalFotos,
-                        totalSubtareas: totalSubtareas,
+                        totalSubtareas,
                     }
                 }),
             )
@@ -221,6 +250,7 @@ export default function TareasShared({ navigation }) {
             setLoadingFiltros(false)
         }
     }
+
 
     const formatFecha = (fecha) => {
         if (!fecha) return ""

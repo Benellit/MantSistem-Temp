@@ -33,6 +33,8 @@ import TareaDetails from './src/screens/shared/TareaDetails';
 import TareasShared from "./src/screens/shared/TareasShared";
 import EditarTareas from './src/screens/shared/EditarTareas';
 import CambiarContrasena from "./src/screens/shared/CambiarContrasena";
+// INACTIVO
+import Inactivo from './src/screens/inactivo/Inactivo';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -63,7 +65,7 @@ function Gate() {
   return (
     <>
       {user ? <AppStack /> : <AuthStack />}
-            <AppToaster />
+      <AppToaster />
 
     </>
   );
@@ -141,6 +143,11 @@ function AppStack() {
         component={PerfilUsuarioShared}
         options={{ headerShown: false }} // o true si quieres header
       />
+      <Stack.Screen
+        name="Inactivo"
+        component={Inactivo}
+        options={{ headerShown: false }}
+      />
     </Stack.Navigator>
   );
 }
@@ -148,7 +155,7 @@ function AppStack() {
 /* ===================== Tabs por rol ===================== */
 
 function RoleTabs({ navigation }) {
-  const { profile } = useAuth(); // viene de Firestore USUARIO/{uid}
+  const { profile } = useAuth();
   const accessHandledRef = useRef(false);
 
   useEffect(() => {
@@ -156,27 +163,27 @@ function RoleTabs({ navigation }) {
 
     const auth = getAuth();
 
-    if (profile.estado !== "Activo") {
-      accessHandledRef.current = true;
-      Alert.alert(
-        "Acceso restringido",
-        "Tu cuenta está inactiva. Contacta a un administrador."
-      );
-      signOut(auth);
-      return;
-    }
-
     if (profile.mustChangePassword) {
       accessHandledRef.current = true;
       navigation.replace("CambiarContrasena", { userId: auth.currentUser?.uid });
       return;
     }
+
   }, [profile, navigation]);
 
+  // 👉 Si NO es Activo, renderizar Inactivo
+  if (profile && profile.estado !== "Activo") {
+    return <Inactivo />;
+  }
+
+  // 👉 Renderizar pantallas según rol
   if (profile?.rol === "Administrador") return <AdminScreens />;
   if (profile?.rol === "Gestor") return <GestorScreens />;
   if (profile?.rol === "Tecnico") return <TecnicoScreens />;
+
+  return null;
 }
+
 
 function AdminScreens() {
   const { profile } = useAuth();

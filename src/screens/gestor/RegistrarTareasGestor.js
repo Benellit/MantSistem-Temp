@@ -396,7 +396,7 @@ const RegistrarTareasGestor = ({ navigation }) => {
                         nombre: sub.data().nombre,
                         descripcion: sub.data().descripcion,
                         orden: sub.data().orden,
-                        estado: "pendiente",
+                        estado: "Pendiente",
                     })
                 }
             }

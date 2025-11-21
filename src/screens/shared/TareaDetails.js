@@ -424,8 +424,11 @@ const TareaDetails = ({ route, navigation }) => {
                         }
                     }),
                 )
+                // ⭐ ORDENAR DESCENDENTE POR fechaDeEntrega
+                evidenciasDataTarea.sort((a, b) => b.fechaDeEntrega - a.fechaDeEntrega)
 
                 setEvidenciasTarea(evidenciasDataTarea)
+
             } catch (error) {
                 console.error("Error cargando evidencias de tarea:", error)
                 setEvidenciasTarea([])
@@ -460,7 +463,7 @@ const TareaDetails = ({ route, navigation }) => {
                         }
                     }),
                 )
-
+                reportesDataTarea.sort((a, b) => b.fecha - a.fecha)
                 setReportesTarea(reportesDataTarea)
             } catch (error) {
                 console.error("Error cargando reportes de tarea:", error)
@@ -536,11 +539,13 @@ const TareaDetails = ({ route, navigation }) => {
                             }),
                         )
 
+                        evidenciasDataSubtarea.sort((a, b) => b.fechaDeEntrega - a.fechaDeEntrega)
                         setEvidenciasSubtareas((prev) => ({
                             ...prev,
                             [docSub.id]: evidenciasDataSubtarea,
                         }))
 
+                        reportesDataSubtarea.sort((a, b) => b.fecha - a.fecha)
                         setReportesSubtareas((prev) => ({
                             ...prev,
                             [docSub.id]: reportesDataSubtarea,
@@ -792,6 +797,21 @@ const TareaDetails = ({ route, navigation }) => {
                             type: "success",
                             text1: "Revisión Cancelada",
                             text2: "¡Asegúrate de Revisarla!",
+                        })
+                    }
+                } else if (tarea.estado === "No entregada") {
+                    if (modalOupdate) {
+                        setTextoPrincipal("¿Deseas cambiar el estado de esta tarea a revisada?")
+                        setTextoSecundario("Si lo cambias, ya no podrás cambiarlo.")
+                        setVisibleModal(true)
+                    } else {
+                        await updateDoc(refTarea, { estado: "Revisada" })
+                        cambio = true
+                        setVisibleModal(false)
+                        Toast.show({
+                            type: "success",
+                            text1: "Tarea Revisada",
+                            text2: "¡Buen trabajo!",
                         })
                     }
                 }
@@ -1612,7 +1632,6 @@ const TareaDetails = ({ route, navigation }) => {
                                             </View>
 
                                             {anteriorCompletada &&
-                                                item.estado !== "Completada" &&
                                                 item.estado !== "Revisada" &&
                                                 profile.rol === "Tecnico" && (
                                                     <View style={{ gap: 8 }}>
@@ -1753,6 +1772,35 @@ const TareaDetails = ({ route, navigation }) => {
                             </TouchableOpacity>
                         </View>
                     )}
+                    {tarea.estado === "No Entregada" && (
+                        <View style={{ gap: 10 }}>
+                            <TouchableOpacity
+                                style={{
+                                    flexDirection: "row",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    gap: 8,
+                                    paddingVertical: 14,
+                                    borderRadius: 12,
+                                    borderWidth: 2,
+                                    borderStyle: "dashed",
+                                    borderColor: profile.modoOscuro ? "#444" : "#D0D0D0",
+                                }}
+                                onPress={() => openSheet("tarea", id)}
+                            >
+                                <AntDesign name="plus" size={20} color={profile.modoOscuro ? "#888" : "#666"} />
+                                <Text
+                                    style={{
+                                        color: profile.modoOscuro ? "#888" : "#666",
+                                        fontWeight: "600",
+                                        fontSize: 15,
+                                    }}
+                                >
+                                    Adjuntar Evidencia o Reporte
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    )}
                     {tarea.estado === "Completada" && (
                         <TouchableOpacity
                             style={{
@@ -1803,6 +1851,19 @@ const TareaDetails = ({ route, navigation }) => {
                             onPress={() => updateEstado(true)}
                         >
                             <Text style={{ color: "white", fontWeight: "700", fontSize: 16 }}>Cancelar Revisión</Text>
+                        </TouchableOpacity>
+                    )}
+                    {tarea.estado === "No Entregada" && (
+                        <TouchableOpacity
+                            style={{
+                                backgroundColor: "#B383E2",
+                                paddingVertical: 16,
+                                borderRadius: 12,
+                                alignItems: "center",
+                            }}
+                            onPress={() => updateEstado(true)}
+                        >
+                            <Text style={{ color: "white", fontWeight: "700", fontSize: 16 }}>Marcar Revisada</Text>
                         </TouchableOpacity>
                     )}
                 </View>
@@ -2310,110 +2371,137 @@ const TareaDetails = ({ route, navigation }) => {
                                     </Text>
                                 </View>
                             ) : (
-                                reportesActuales.map((reporte, index) => (
-                                    <View
-                                        key={index}
-                                        style={{
-                                            backgroundColor: profile.modoOscuro ? "#1A1A1A" : "#F8F9FA",
-                                            borderRadius: 16,
-                                            padding: 16,
-                                            marginBottom: 16,
-                                        }}
-                                    >
-                                        <TouchableOpacity
-                                            onPress={() => setExpandidoReportes((prev) => ({ ...prev, [index]: !prev[index] }))}
+                                reportesActuales.map((reporte, index) => {
+
+                                    // 🟥 Fecha límite de la tarea
+                                    const entregaTarea = tarea.fechaEntrega?.toDate
+                                        ? tarea.fechaEntrega.toDate()
+                                        : new Date(tarea.fechaEntrega);
+
+                                    // 🟥 Fecha del reporte (la tuya)
+                                    const fechaReporte = reporte.fecha?.toDate
+                                        ? reporte.fecha.toDate()
+                                        : new Date(reporte.fecha);
+
+                                    // 🟥 Determinar si está fuera del tiempo
+                                    const fueraDelTiempo = fechaReporte > entregaTarea;
+
+                                    return (
+                                        <View
+                                            key={index}
                                             style={{
-                                                flexDirection: "row",
-                                                justifyContent: "space-between",
-                                                alignItems: "center",
-                                                marginBottom: expandidoReportes[index] ? 12 : 0,
+                                                backgroundColor: profile.modoOscuro ? "#1A1A1A" : "#F8F9FA",
+                                                borderRadius: 16,
+                                                padding: 16,
+                                                marginBottom: 16,
                                             }}
                                         >
-                                            <View style={{ flexDirection: "row", alignItems: "center", gap: 12, flex: 1 }}>
-                                                <Image
-                                                    style={{ width: 40, height: 40, borderRadius: 20 }}
-                                                    source={{
-                                                        uri:
-                                                            reporte.usuario?.fotoPerfil?.trim() !== ""
-                                                                ? reporte.usuario.fotoPerfil
-                                                                : "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png",
-                                                    }}
+                                            <TouchableOpacity
+                                                onPress={() =>
+                                                    setExpandidoReportes((prev) => ({ ...prev, [index]: !prev[index] }))
+                                                }
+                                                style={{
+                                                    flexDirection: "row",
+                                                    justifyContent: "space-between",
+                                                    alignItems: "center",
+                                                    marginBottom: expandidoReportes[index] ? 12 : 0,
+                                                }}
+                                            >
+                                                <View style={{ flexDirection: "row", alignItems: "center", gap: 12, flex: 1 }}>
+                                                    <Image
+                                                        style={{ width: 40, height: 40, borderRadius: 20 }}
+                                                        source={{
+                                                            uri:
+                                                                reporte.usuario?.fotoPerfil?.trim() !== ""
+                                                                    ? reporte.usuario.fotoPerfil
+                                                                    : "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png",
+                                                        }}
+                                                    />
+                                                    <View style={{ flex: 1 }}>
+                                                        <Text
+                                                            style={{
+                                                                color: profile.modoOscuro ? "#FFF" : "#1A1A1A",
+                                                                fontWeight: "600",
+                                                                fontSize: 15,
+                                                            }}
+                                                        >
+                                                            {reporte.asunto}
+                                                        </Text>
+
+                                                        {/* 🟥 FECHA EN ROJO SI ESTÁ FUERA DE TIEMPO */}
+                                                        <Text
+                                                            style={{
+                                                                color: fueraDelTiempo
+                                                                    ? "#F5615C" // rojo
+                                                                    : profile.modoOscuro
+                                                                        ? "#888"
+                                                                        : "#999",
+                                                                fontSize: 12,
+                                                                marginTop: 2,
+                                                            }}
+                                                        >
+                                                            {formatFecha(fechaReporte)}
+                                                        </Text>
+                                                    </View>
+                                                </View>
+
+                                                <MaterialIcons
+                                                    name={expandidoReportes[index] ? "keyboard-arrow-up" : "keyboard-arrow-down"}
+                                                    size={24}
+                                                    color={profile.modoOscuro ? "#888" : "#666"}
                                                 />
-                                                <View style={{ flex: 1 }}>
+                                            </TouchableOpacity>
+
+                                            {expandidoReportes[index] && (
+                                                <View>
+                                                    <View
+                                                        style={{
+                                                            height: 1,
+                                                            backgroundColor: profile.modoOscuro ? "#2C2C2C" : "#E5E5E5",
+                                                            marginBottom: 12,
+                                                        }}
+                                                    />
                                                     <Text
                                                         style={{
-                                                            color: profile.modoOscuro ? "#FFF" : "#1A1A1A",
+                                                            color: profile.modoOscuro ? "#888" : "#666",
+                                                            fontSize: 13,
                                                             fontWeight: "600",
-                                                            fontSize: 15,
+                                                            marginBottom: 6,
                                                         }}
                                                     >
-                                                        {reporte.asunto}
+                                                        Descripción:
                                                     </Text>
                                                     <Text
                                                         style={{
-                                                            color: profile.modoOscuro ? "#888" : "#999",
-                                                            fontSize: 12,
-                                                            marginTop: 2,
+                                                            color: profile.modoOscuro ? "#B0B0B0" : "#666",
+                                                            fontSize: 14,
+                                                            lineHeight: 20,
                                                         }}
                                                     >
-                                                        {formatFecha(reporte.fecha)}
+                                                        {reporte.descripcion}
+                                                    </Text>
+
+                                                    <Text
+                                                        style={{
+                                                            color: profile.modoOscuro ? "#666" : "#999",
+                                                            fontSize: 12,
+                                                            marginTop: 10,
+                                                        }}
+                                                    >
+                                                        Reportado por:{" "}
+                                                        {reporte.usuario
+                                                            ? [reporte.usuario.primerNombre ?? "", reporte.usuario.primerApellido ?? ""]
+                                                                .filter((n) => n.trim() !== "")
+                                                                .join(" ")
+                                                            : "Usuario desconocido"}
                                                     </Text>
                                                 </View>
-                                            </View>
-                                            <MaterialIcons
-                                                name={expandidoReportes[index] ? "keyboard-arrow-up" : "keyboard-arrow-down"}
-                                                size={24}
-                                                color={profile.modoOscuro ? "#888" : "#666"}
-                                            />
-                                        </TouchableOpacity>
-
-                                        {expandidoReportes[index] && (
-                                            <View>
-                                                <View
-                                                    style={{
-                                                        height: 1,
-                                                        backgroundColor: profile.modoOscuro ? "#2C2C2C" : "#E5E5E5",
-                                                        marginBottom: 12,
-                                                    }}
-                                                />
-                                                <Text
-                                                    style={{
-                                                        color: profile.modoOscuro ? "#888" : "#666",
-                                                        fontSize: 13,
-                                                        fontWeight: "600",
-                                                        marginBottom: 6,
-                                                    }}
-                                                >
-                                                    Descripción:
-                                                </Text>
-                                                <Text
-                                                    style={{
-                                                        color: profile.modoOscuro ? "#B0B0B0" : "#666",
-                                                        fontSize: 14,
-                                                        lineHeight: 20,
-                                                    }}
-                                                >
-                                                    {reporte.descripcion}
-                                                </Text>
-                                                <Text
-                                                    style={{
-                                                        color: profile.modoOscuro ? "#666" : "#999",
-                                                        fontSize: 12,
-                                                        marginTop: 10,
-                                                    }}
-                                                >
-                                                    Reportado por:{" "}
-                                                    {reporte.usuario
-                                                        ? [reporte.usuario.primerNombre ?? "", reporte.usuario.primerApellido ?? ""]
-                                                            .filter((n) => n.trim() !== "")
-                                                            .join(" ")
-                                                        : "Usuario desconocido"}
-                                                </Text>
-                                            </View>
-                                        )}
-                                    </View>
-                                ))
+                                            )}
+                                        </View>
+                                    );
+                                })
                             )}
+
                         </ScrollView>
                     </View>
                 </View>
