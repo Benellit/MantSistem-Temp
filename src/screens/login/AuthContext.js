@@ -7,6 +7,8 @@ import {
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { auth, db } from "../../lib/firebaseApp";
+import { registerPushTokenForUser } from "../../lib/registerPushTokenForUser";
+
 
 const AuthContext = createContext(null);
 export const useAuth = () => useContext(AuthContext);
@@ -18,11 +20,14 @@ export function AuthProvider({ children }) {
 
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, async (u) => {
-      setUser(u);
+  const unsub = onAuthStateChanged(auth, async (u) => {
+    setUser(u);
+
+    try {
       if (u) {
         const ref = doc(db, "USUARIO", u.uid);
         const snap = await getDoc(ref);
+
         if (snap.exists()) {
           setProfile({ id: u.uid, ...snap.data() });
         } else {
@@ -37,13 +42,25 @@ export function AuthProvider({ children }) {
           await setDoc(ref, base);
           setProfile({ id: u.uid, ...base });
         }
+
+        try {
+          await registerPushTokenForUser(u.uid);
+        } catch (error) {
+          console.log("Error registrando token de notificaciones:", error);
+        }
       } else {
         setProfile(null);
       }
+    } catch (error) {
+      console.log("Error manejando el estado de autenticación", error);
+    } finally {
       setLoading(false);
-    });
-    return () => unsub();
-  }, []);
+    }
+  });
+
+  return () => unsub();
+}, []);
+
 
 
   const login = (email, password) => signInWithEmailAndPassword(auth, email, password);
