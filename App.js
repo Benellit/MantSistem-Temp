@@ -5,6 +5,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { ActivityIndicator, Alert, View } from "react-native";
 import { useEffect, useRef } from "react";
 import { getAuth, signOut } from "firebase/auth";
+import * as Notifications from "expo-notifications";
 import AppToaster from "./src/ui/AppToaster";
 
 
@@ -38,6 +39,14 @@ import Inactivo from './src/screens/inactivo/Inactivo';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: false,
+  }),
+});
 
 /* ===================== App Root ===================== */
 
