@@ -3,16 +3,16 @@ import Feather from "@expo/vector-icons/Feather";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import * as ImagePicker from "expo-image-picker";
 import { LinearGradient } from "expo-linear-gradient";
-import { initializeApp, getApps } from "firebase/app";
+import { getApps, initializeApp } from "firebase/app";
 import {
-  getAuth,
   createUserWithEmailAndPassword,
-  signOut,
-  signInWithEmailAndPassword
+  getAuth,
+  signInWithEmailAndPassword,
+  signOut
 } from "firebase/auth";
 import { firebaseConfig } from "../../credenciales/Credenciales";
 
-import { doc, setDoc, collection, getDocs, getFirestore, serverTimestamp } from "firebase/firestore";
+import { collection, doc, getDocs, getFirestore, serverTimestamp, setDoc } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -72,8 +72,8 @@ const RegistrarUsuariosGestor = ({ navigation }) => {
   const isAdmin = profile?.rol === "Administrador";
 
   const roles = isAdmin
-  ? ["Administrador", "Gestor", "Tecnico"]
-  : ["Tecnico"];
+    ? ["Administrador", "Gestor", "Tecnico"]
+    : ["Tecnico"];
 
   const estados = ["Activo", "Inactivo"];
 
@@ -118,24 +118,24 @@ const RegistrarUsuariosGestor = ({ navigation }) => {
   }, []);
 
   useEffect(() => {
-  if (!profile) return;
+    if (!profile) return;
 
-  // Si es Gestor, prellenamos sucursal (id + nombre) y la "congelamos" en el estado del form
-  if (isGestor) {
-    const gestorSucId = extractSucursalId(profile?.IDSucursal);
-    if (!gestorSucId) return;
+    // Si es Gestor, prellenamos sucursal (id + nombre) y la "congelamos" en el estado del form
+    if (isGestor) {
+      const gestorSucId = extractSucursalId(profile?.IDSucursal);
+      if (!gestorSucId) return;
 
-    // Intentamos resolver el nombre usando la lista de sucursales cargada
-    const found = sucursales.find(s => s.id === gestorSucId);
-    const nombre = found?.nombre || gestorSucId;
+      // Intentamos resolver el nombre usando la lista de sucursales cargada
+      const found = sucursales.find(s => s.id === gestorSucId);
+      const nombre = found?.nombre || gestorSucId;
 
-    setFormData(prev => ({
-      ...prev,
-      IDSucursal: gestorSucId,
-      sucursalNombre: nombre,
-    }));
-  }
-}, [profile, isGestor, sucursales]);
+      setFormData(prev => ({
+        ...prev,
+        IDSucursal: gestorSucId,
+        sucursalNombre: nombre,
+      }));
+    }
+  }, [profile, isGestor, sucursales]);
 
   // Función para subir imagen a Cloudinary
   const uploadImageToCloudinary = async (uri) => {
@@ -243,7 +243,7 @@ const RegistrarUsuariosGestor = ({ navigation }) => {
         setUploadingImage(true);
         const imageUrl = await uploadImageToCloudinary(result.assets[0].uri);
         setFormData((prev) => ({ ...prev, fotoPerfil: imageUrl }));
-       Toast.show({
+        Toast.show({
           type: "appSuccess",
           text1: "Éxito",
           text2: "Foto tomada correctamente",
@@ -284,187 +284,187 @@ const RegistrarUsuariosGestor = ({ navigation }) => {
     );
   };
 
-// Validar formulario
-const validateForm = () => {
-  if (!formData.primerNombre.trim()) {
-    Toast.show({
-      type: "appError",
-      text1: "Falta información",
-      text2: "El primer nombre es obligatorio.",
-    });
-    return false;
-  }
-  if (!formData.primerApellido.trim()) {
-    Toast.show({
-      type: "appError",
-      text1: "Falta información",
-      text2: "El primer apellido es obligatorio.",
-    });
-    return false;
-  }
-  if (!formData.email.trim()) {
-    Toast.show({
-      type: "appError",
-      text1: "Falta información",
-      text2: "El correo electrónico es obligatorio.",
-    });
-    return false;
-  } 
-  if (!/\S+@\S+\.\S+/.test(formData.email)) {
-    Toast.show({
-      type: "appError",
-      text1: "Correo inválido",
-      text2: "Ingresa un correo electrónico válido.",
-    });
-    return false;
-  }
-  if (isAdmin && !formData.IDSucursal) {
-    Toast.show({
-      type: "appError",
-      text1: "Falta información",
-      text2: "Debe seleccionar una sucursal.",
-    });
-    return false;
-  }
-  return true;
-};
+  // Validar formulario
+  const validateForm = () => {
+    if (!formData.primerNombre.trim()) {
+      Toast.show({
+        type: "appError",
+        text1: "Falta información",
+        text2: "El primer nombre es obligatorio.",
+      });
+      return false;
+    }
+    if (!formData.primerApellido.trim()) {
+      Toast.show({
+        type: "appError",
+        text1: "Falta información",
+        text2: "El primer apellido es obligatorio.",
+      });
+      return false;
+    }
+    if (!formData.email.trim()) {
+      Toast.show({
+        type: "appError",
+        text1: "Falta información",
+        text2: "El correo electrónico es obligatorio.",
+      });
+      return false;
+    }
+    if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      Toast.show({
+        type: "appError",
+        text1: "Correo inválido",
+        text2: "Ingresa un correo electrónico válido.",
+      });
+      return false;
+    }
+    if (isAdmin && !formData.IDSucursal) {
+      Toast.show({
+        type: "appError",
+        text1: "Falta información",
+        text2: "Debe seleccionar una sucursal.",
+      });
+      return false;
+    }
+    return true;
+  };
 
 
   // Registrar usuario
   const handleRegister = async () => {
-  if (!validateForm()) return;
+    if (!validateForm()) return;
 
-  setLoading(true);
-  try {
-    const {
-      primerNombre,
-      segundoNombre,
-      primerApellido,
-      segundoApellido,
-      email,
-      numTel,
-      fotoPerfil,
-      estado,
-    } = formData;
+    setLoading(true);
+    try {
+      const {
+        primerNombre,
+        segundoNombre,
+        primerApellido,
+        segundoApellido,
+        email,
+        numTel,
+        fotoPerfil,
+        estado,
+      } = formData;
 
-    const sucursalId = isGestor
-      ? extractSucursalId(profile?.IDSucursal)
-      : extractSucursalId(formData?.IDSucursal);
+      const sucursalId = isGestor
+        ? extractSucursalId(profile?.IDSucursal)
+        : extractSucursalId(formData?.IDSucursal);
 
-    if (!sucursalId) {
+      if (!sucursalId) {
+        Toast.show({
+          type: "appError",
+          text1: "Error",
+          text2: "No se pudo determinar la sucursal.",
+        });
+        setLoading(false);
+        return;
+      }
+
+      const emailLimpio = email.trim().toLowerCase();
+
+      // 1) Crear usuario en Auth secundaria
+      const cred = await createUserWithoutSignOut(emailLimpio, TEMP_PASSWORD);
+
+      // 2) Escribir/actualizar Firestore
+      await setDoc(doc(db, "USUARIO", cred.user.uid), {
+        primerNombre: primerNombre.trim(),
+        segundoNombre: segundoNombre.trim(),
+        primerApellido: primerApellido.trim(),
+        segundoApellido: segundoApellido.trim(),
+        email: emailLimpio,
+        numTel: (numTel || "").trim(),
+        fotoPerfil: fotoPerfil || "",
+        rol: (isAdmin ? (formData.rol || "Tecnico") : "Tecnico"),
+        IDSucursal: doc(db, "SUCURSAL", sucursalId),
+        estado,
+        modoOscuro: false,
+        fechaRegistro: serverTimestamp(),
+        mustChangePassword: true,
+      });
+
+      // 3) Cleanup: cerrar sesión SOLO del Auth secundario
+      try { await signOut(getSecondaryAuth()); } catch (_) { }
+
+      // 4) Reset + navegación + Toast
+      setFormData(prev => ({
+        primerNombre: "",
+        segundoNombre: "",
+        primerApellido: "",
+        segundoApellido: "",
+        email: "",
+        numTel: "",
+        fotoPerfil: "",
+        rol: "Tecnico",
+        IDSucursal: isGestor ? prev.IDSucursal : null,
+        sucursalNombre: isGestor ? prev.sucursalNombre : "",
+        estado: "Activo",
+        modoOscuro: false,
+      }));
+
+      if (navigation?.goBack) navigation.goBack();
+
+      Toast.show({
+        type: "appSuccess",
+        text1: "Usuario registrado",
+        text2: "Contraseña temporal: 123456",
+      });
+
+    } catch (error) {
+      // Backfill: si el email ya existía en Auth pero faltó Firestore
+      if (error.code === "auth/email-already-in-use") {
+        try {
+          const emailLimpio = formData.email.trim().toLowerCase();
+          const secondaryAuth = getSecondaryAuth();
+          const signed = await signInWithEmailAndPassword(secondaryAuth, emailLimpio, TEMP_PASSWORD);
+          const uid = signed.user.uid;
+
+          await setDoc(doc(db, "USUARIO", uid), {
+            primerNombre: formData.primerNombre.trim(),
+            segundoNombre: formData.segundoNombre.trim(),
+            primerApellido: formData.primerApellido.trim(),
+            segundoApellido: formData.segundoApellido.trim(),
+            email: emailLimpio,
+            numTel: (formData.numTel || "").trim(),
+            fotoPerfil: formData.fotoPerfil || "",
+            rol: (isAdmin ? (formData.rol || "Tecnico") : "Tecnico"),
+            IDSucursal: doc(db, "SUCURSAL", extractSucursalId(isGestor ? profile?.IDSucursal : formData?.IDSucursal)),
+            estado: formData.estado,
+            modoOscuro: false,
+            fechaRegistro: serverTimestamp(),
+            mustChangePassword: true,
+          }, { merge: true });
+
+          try { await signOut(secondaryAuth); } catch (_) { }
+
+          Toast.show({
+            type: "appSuccess",
+            text1: "Usuario ya existía",
+            text2: "Perfil completado en la base de datos.",
+          });
+
+          if (navigation?.goBack) navigation.goBack();
+          return;
+        } catch (repairErr) {
+          console.error("Repair flow failed:", repairErr);
+        }
+      }
+
+      console.error("Error registrando usuario:", error);
+      const errorMessage =
+        error.code === "auth/invalid-email" ? "El email no es válido" :
+          error.code === "auth/email-already-in-use" ? "El email ya está en uso" :
+            "No se pudo registrar el usuario";
+
       Toast.show({
         type: "appError",
-        text1: "Error",
-        text2: "No se pudo determinar la sucursal.",
+        text1: "Error al registrar",
+        text2: errorMessage,
       });
+    } finally {
       setLoading(false);
-      return;
     }
-
-    const emailLimpio = email.trim().toLowerCase();
-
-    // 1) Crear usuario en Auth secundaria
-    const cred = await createUserWithoutSignOut(emailLimpio, TEMP_PASSWORD);
-
-    // 2) Escribir/actualizar Firestore
-    await setDoc(doc(db, "USUARIO", cred.user.uid), {
-      primerNombre: primerNombre.trim(),
-      segundoNombre: segundoNombre.trim(),
-      primerApellido: primerApellido.trim(),
-      segundoApellido: segundoApellido.trim(),
-      email: emailLimpio,
-      numTel: (numTel || "").trim(),
-      fotoPerfil: fotoPerfil || "",
-      rol: (isAdmin ? (formData.rol || "Tecnico") : "Tecnico"),
-      IDSucursal: doc(db, "SUCURSAL", sucursalId),
-      estado,
-      modoOscuro: false,
-      fechaRegistro: serverTimestamp(),
-      mustChangePassword: true,
-    });
-
-    // 3) Cleanup: cerrar sesión SOLO del Auth secundario
-    try { await signOut(getSecondaryAuth()); } catch (_) {}
-
-    // 4) Reset + navegación + Toast
-    setFormData(prev => ({
-      primerNombre: "",
-      segundoNombre: "",
-      primerApellido: "",
-      segundoApellido: "",
-      email: "",
-      numTel: "",
-      fotoPerfil: "",
-      rol: "Tecnico",
-      IDSucursal: isGestor ? prev.IDSucursal : null,
-      sucursalNombre: isGestor ? prev.sucursalNombre : "",
-      estado: "Activo",
-      modoOscuro: false,
-    }));
-
-    if (navigation?.goBack) navigation.goBack();
-
-    Toast.show({
-      type: "appSuccess",
-      text1: "Usuario registrado",
-      text2: "Contraseña temporal: 123456",
-    });
-
-  } catch (error) {
-    // Backfill: si el email ya existía en Auth pero faltó Firestore
-    if (error.code === "auth/email-already-in-use") {
-      try {
-        const emailLimpio = formData.email.trim().toLowerCase();
-        const secondaryAuth = getSecondaryAuth();
-        const signed = await signInWithEmailAndPassword(secondaryAuth, emailLimpio, TEMP_PASSWORD);
-        const uid = signed.user.uid;
-
-        await setDoc(doc(db, "USUARIO", uid), {
-          primerNombre: formData.primerNombre.trim(),
-          segundoNombre: formData.segundoNombre.trim(),
-          primerApellido: formData.primerApellido.trim(),
-          segundoApellido: formData.segundoApellido.trim(),
-          email: emailLimpio,
-          numTel: (formData.numTel || "").trim(),
-          fotoPerfil: formData.fotoPerfil || "",
-          rol: (isAdmin ? (formData.rol || "Tecnico") : "Tecnico"),
-          IDSucursal: doc(db, "SUCURSAL", extractSucursalId(isGestor ? profile?.IDSucursal : formData?.IDSucursal)),
-          estado: formData.estado,
-          modoOscuro: false,
-          fechaRegistro: serverTimestamp(),
-          mustChangePassword: true,
-        }, { merge: true });
-
-        try { await signOut(secondaryAuth); } catch (_) {}
-
-        Toast.show({
-          type: "appSuccess",
-          text1: "Usuario ya existía",
-          text2: "Perfil completado en la base de datos.",
-        });
-
-        if (navigation?.goBack) navigation.goBack();
-        return;
-      } catch (repairErr) {
-        console.error("Repair flow failed:", repairErr);
-      }
-    }
-
-    console.error("Error registrando usuario:", error);
-    const errorMessage =
-      error.code === "auth/invalid-email" ? "El email no es válido" :
-      error.code === "auth/email-already-in-use" ? "El email ya está en uso" :
-      "No se pudo registrar el usuario";
-
-    Toast.show({
-      type: "appError",
-      text1: "Error al registrar",
-      text2: errorMessage,
-    });
-  } finally {
-    setLoading(false);
-  }
-};
+  };
 
 
   if (loadingSucursales) {
@@ -479,17 +479,17 @@ const validateForm = () => {
   return (
     <View style={{ flex: 1 }}>
       <LinearGradient
-        colors={["#87aef0", "#9c8fc4"]}
+        colors={profile.modoOscuro ? ['#1A1A2E', '#16213E'] : ['#667EEA', '#764BA2']}
         start={{ x: 0.5, y: 0.4 }}
         end={{ x: 0.5, y: 1 }}
         style={{
-          height: 155,
+          height: 165,
         }}
       >
         <View style={{ paddingTop: 40, paddingLeft: 10 }}>
           <View style={{ flexDirection: "row", alignItems: "center" }}>
             <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 4 }}>
-              <Ionicons name="chevron-back" size={24} color={profile.modoOscuro === true ? "black" : "#FFFF"} />
+              <Ionicons name="chevron-back" size={24} color={"#FFFF"} />
             </TouchableOpacity>
           </View>
 
@@ -509,7 +509,7 @@ const validateForm = () => {
       <View style={profile.modoOscuro === true ? styles.containerOscuro : styles.containerClaro}>
         <ScrollView style={{ paddingHorizontal: 15, borderTopRightRadius: 35, borderTopLeftRadius: 35, paddingBottom: 0 }} nestedScrollEnabled={true}>
           {/* Foto de perfil */}
-          <View style={{marginTop: 20}}>
+          <View style={{ marginTop: 20 }}>
             <Text style={[styles.titulo, { color: profile.modoOscuro === true ? "white" : 'black' }]}>Datos personales</Text>
             <View style={styles.photoContainer}>
               <View style={styles.photoWrapper}>
@@ -543,51 +543,51 @@ const validateForm = () => {
 
           {/* Formulario */}
           <View>
-              <View style={styles.fieldContainer}>
-                <Text style={profile.modoOscuro === true ? styles.labelOscuro : styles.labelClaro}>Primer Nombre *</Text>
-                <TextInput
-                  style={profile.modoOscuro === true ? styles.inputOscuro : styles.inputClaro}
-                  value={formData.primerNombre}
-                  onChangeText={(text) => setFormData((prev) => ({ ...prev, primerNombre: text }))}
-                  placeholderTextColor={profile.modoOscuro ? "#D1D1D1" : "black"}
-                  placeholder="Ingrese primer nombre"
-                />
-              </View>
+            <View style={styles.fieldContainer}>
+              <Text style={profile.modoOscuro === true ? styles.labelOscuro : styles.labelClaro}>Primer Nombre *</Text>
+              <TextInput
+                style={profile.modoOscuro === true ? styles.inputOscuro : styles.inputClaro}
+                value={formData.primerNombre}
+                onChangeText={(text) => setFormData((prev) => ({ ...prev, primerNombre: text }))}
+                placeholderTextColor={profile.modoOscuro ? "#D1D1D1" : "black"}
+                placeholder="Ingrese primer nombre"
+              />
+            </View>
 
-              <View style={styles.fieldContainer}>
-                <Text style={profile.modoOscuro === true ? styles.labelOscuro : styles.labelClaro}>Segundo Nombre</Text>
-                <TextInput
-                  style={profile.modoOscuro === true ? styles.inputOscuro : styles.inputClaro}
-                  value={formData.segundoNombre}
-                  onChangeText={(text) => setFormData((prev) => ({ ...prev, segundoNombre: text }))}
-                  placeholderTextColor={profile.modoOscuro ? "#D1D1D1" : "black"}
-                  placeholder="Ingrese segundo nombre"
-                />
-              </View>
+            <View style={styles.fieldContainer}>
+              <Text style={profile.modoOscuro === true ? styles.labelOscuro : styles.labelClaro}>Segundo Nombre</Text>
+              <TextInput
+                style={profile.modoOscuro === true ? styles.inputOscuro : styles.inputClaro}
+                value={formData.segundoNombre}
+                onChangeText={(text) => setFormData((prev) => ({ ...prev, segundoNombre: text }))}
+                placeholderTextColor={profile.modoOscuro ? "#D1D1D1" : "black"}
+                placeholder="Ingrese segundo nombre"
+              />
+            </View>
 
-              <View style={styles.fieldContainer}>
-                <Text style={profile.modoOscuro === true ? styles.labelOscuro : styles.labelClaro}>Primer Apellido *</Text>
-                <TextInput
-                  style={profile.modoOscuro === true ? styles.inputOscuro : styles.inputClaro}
-                  value={formData.primerApellido}
-                  onChangeText={(text) => setFormData((prev) => ({ ...prev, primerApellido: text }))}
-                  placeholderTextColor={profile.modoOscuro ? "#D1D1D1" : "black"}
-                  placeholder="Ingrese primer apellido"
-                />
-              </View>
+            <View style={styles.fieldContainer}>
+              <Text style={profile.modoOscuro === true ? styles.labelOscuro : styles.labelClaro}>Primer Apellido *</Text>
+              <TextInput
+                style={profile.modoOscuro === true ? styles.inputOscuro : styles.inputClaro}
+                value={formData.primerApellido}
+                onChangeText={(text) => setFormData((prev) => ({ ...prev, primerApellido: text }))}
+                placeholderTextColor={profile.modoOscuro ? "#D1D1D1" : "black"}
+                placeholder="Ingrese primer apellido"
+              />
+            </View>
 
-              <View style={styles.fieldContainer}>
-                <Text style={profile.modoOscuro === true ? styles.labelOscuro : styles.labelClaro}>Segundo Apellido</Text>
-                <TextInput
-                  style={profile.modoOscuro === true ? styles.inputOscuro : styles.inputClaro}
-                  value={formData.segundoApellido}
-                  onChangeText={(text) => setFormData((prev) => ({ ...prev, segundoApellido: text }))}
-                  placeholderTextColor={profile.modoOscuro ? "#D1D1D1" : "black"}
-                  placeholder="Ingrese segundo apellido"
-                />
-              </View>
+            <View style={styles.fieldContainer}>
+              <Text style={profile.modoOscuro === true ? styles.labelOscuro : styles.labelClaro}>Segundo Apellido</Text>
+              <TextInput
+                style={profile.modoOscuro === true ? styles.inputOscuro : styles.inputClaro}
+                value={formData.segundoApellido}
+                onChangeText={(text) => setFormData((prev) => ({ ...prev, segundoApellido: text }))}
+                placeholderTextColor={profile.modoOscuro ? "#D1D1D1" : "black"}
+                placeholder="Ingrese segundo apellido"
+              />
+            </View>
 
-              
+
 
             <View style={{ marginTop: 20 }}>
               <Text style={[styles.titulo, { color: profile.modoOscuro === true ? "white" : 'black' }]}>Datos de contacto</Text>
@@ -621,30 +621,30 @@ const validateForm = () => {
               <Text style={[styles.titulo, { color: profile.modoOscuro === true ? "white" : 'black' }]}>Información del sistema</Text>
               <View style={{ flexDirection: "row", gap: 10 }}>
                 <View style={styles.fieldContainer}>
-                <Text style={profile.modoOscuro ? styles.labelOscuro : styles.labelClaro}>Rol *</Text>
+                  <Text style={profile.modoOscuro ? styles.labelOscuro : styles.labelClaro}>Rol *</Text>
 
-                {isAdmin ? (
-                  // 🧭 ADMIN puede abrir modal y elegir rol
-                  <TouchableOpacity
-                    style={profile.modoOscuro ? styles.inputOscuro : styles.inputClaro}
-                    onPress={() => setShowRolModal(true)}
-                  >
-                    <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                  {isAdmin ? (
+                    // 🧭 ADMIN puede abrir modal y elegir rol
+                    <TouchableOpacity
+                      style={profile.modoOscuro ? styles.inputOscuro : styles.inputClaro}
+                      onPress={() => setShowRolModal(true)}
+                    >
+                      <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                        <Text style={profile.modoOscuro ? styles.selectButtonTextOscuro : styles.selectButtonTextClaro}>
+                          {formData.rol || "Seleccione un rol"}
+                        </Text>
+                        <Feather name="chevron-down" size={20} color="#666" />
+                      </View>
+                    </TouchableOpacity>
+                  ) : (
+                    // 🧩 GESTOR solo lo ve (sin modal)
+                    <View style={profile.modoOscuro ? styles.inputOscuro : styles.inputClaro}>
                       <Text style={profile.modoOscuro ? styles.selectButtonTextOscuro : styles.selectButtonTextClaro}>
-                        {formData.rol || "Seleccione un rol"}
+                        {formData.rol}
                       </Text>
-                      <Feather name="chevron-down" size={20} color="#666" />
                     </View>
-                  </TouchableOpacity>
-                ) : (
-                  // 🧩 GESTOR solo lo ve (sin modal)
-                  <View style={profile.modoOscuro ? styles.inputOscuro : styles.inputClaro}>
-                    <Text style={profile.modoOscuro ? styles.selectButtonTextOscuro : styles.selectButtonTextClaro}>
-                      {formData.rol}
-                    </Text>
-                  </View>
-                )}
-              </View>
+                  )}
+                </View>
 
 
 
@@ -668,35 +668,35 @@ const validateForm = () => {
             </View>
 
             {isAdmin ? (
-        <View style={styles.fieldContainer}>
-          <Text style={profile.modoOscuro ? styles.labelOscuro : styles.labelClaro}>Sucursal *</Text>
-          <TouchableOpacity
-            style={profile.modoOscuro ? styles.inputOscuro : styles.inputClaro}
-            onPress={() => setShowSucursalModal(true)}
-          >
-            <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-              <View>
-                <Text style={profile.modoOscuro ? styles.selectButtonTextOscuro : styles.selectButtonTextClaro}>
-                  {formData.sucursalNombre || "Seleccione una sucursal"}
-                </Text>
+              <View style={styles.fieldContainer}>
+                <Text style={profile.modoOscuro ? styles.labelOscuro : styles.labelClaro}>Sucursal *</Text>
+                <TouchableOpacity
+                  style={profile.modoOscuro ? styles.inputOscuro : styles.inputClaro}
+                  onPress={() => setShowSucursalModal(true)}
+                >
+                  <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                    <View>
+                      <Text style={profile.modoOscuro ? styles.selectButtonTextOscuro : styles.selectButtonTextClaro}>
+                        {formData.sucursalNombre || "Seleccione una sucursal"}
+                      </Text>
+                    </View>
+                    <View style={{ marginRight: 10 }}>
+                      <Feather name="chevron-down" size={20} color="#666" />
+                    </View>
+                  </View>
+                </TouchableOpacity>
               </View>
-              <View style={{ marginRight: 10 }}>
-                <Feather name="chevron-down" size={20} color="#666" />
+            ) : (
+              // Gestor: sólo lectura (sin modal)
+              <View style={styles.fieldContainer}>
+                <Text style={profile.modoOscuro ? styles.labelOscuro : styles.labelClaro}>Sucursal *</Text>
+                <View style={profile.modoOscuro ? styles.inputOscuro : styles.inputClaro}>
+                  <Text style={profile.modoOscuro ? styles.selectButtonTextOscuro : styles.selectButtonTextClaro}>
+                    {formData.sucursalNombre || "Cargando sucursal..."}
+                  </Text>
+                </View>
               </View>
-            </View>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        // Gestor: sólo lectura (sin modal)
-        <View style={styles.fieldContainer}>
-          <Text style={profile.modoOscuro ? styles.labelOscuro : styles.labelClaro}>Sucursal *</Text>
-          <View style={profile.modoOscuro ? styles.inputOscuro : styles.inputClaro}>
-            <Text style={profile.modoOscuro ? styles.selectButtonTextOscuro : styles.selectButtonTextClaro}>
-              {formData.sucursalNombre || "Cargando sucursal..."}
-            </Text>
-          </View>
-        </View>
-      )}
+            )}
 
           </View>
 
@@ -719,45 +719,46 @@ const validateForm = () => {
           <View style={{ height: 40 }} />
 
           {/* Modal para seleccionar Rol (solo Admin) */}
-      {isAdmin && (
-        <Modal
-          visible={showRolModal}
-          transparent
-          animationType="slide"
-          onRequestClose={() => setShowRolModal(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Seleccionar Rol</Text>
+          {isAdmin && (
+            <Modal
+              visible={showRolModal}
+              transparent
+              animationType="slide"
+              onRequestClose={() => setShowRolModal(false)}
+            >
+              <View style={styles.modalOverlay}>
+                <View style={[profile.modoOscuro ? styles.modalContentOscuro : styles.modalContentClaro]}>
+                  <Text style={[styles.modalTitle, { color: profile.modoOscuro ? "#FFFFFF" : "black" }]} >
+                    Seleccionar Rol
+                  </Text>
+                  {roles.map((rol) => (
+                    <TouchableOpacity
+                      key={rol}
+                      style={styles.modalOption}
+                      onPress={() => {
+                        setFormData((prev) => ({ ...prev, rol }));
+                        setShowRolModal(false);
+                      }}
+                    >
+                      <Text style={[profile.modoOscuro ? styles.modalOptionTextOscuro : styles.modalOptionTextClaro]}>{rol}</Text>
+                      {formData.rol === rol && (
+                        <Feather name="check" size={20} color="#007AFF" />
+                      )}
+                    </TouchableOpacity>
+                  ))}
 
-              {roles.map((rol) => (
-                <TouchableOpacity
-                  key={rol}
-                  style={styles.modalOption}
-                  onPress={() => {
-                    setFormData((prev) => ({ ...prev, rol }));
-                    setShowRolModal(false);
-                  }}
-                >
-                  <Text style={styles.modalOptionText}>{rol}</Text>
-                  {formData.rol === rol && (
-                    <Feather name="check" size={20} color="#007AFF" />
-                  )}
-                </TouchableOpacity>
-              ))}
+                  <TouchableOpacity
+                    style={[profile.modoOscuro ? styles.modalCloseButtonOscuro : styles.modalCloseButtonClaro]}
+                    onPress={() => setShowRolModal(false)}
+                  >
+                    <Text style={[styles.modalCloseButtonText, {color: profile.modoOscuro ? "#FFFFFF" : "black"}]}>Cancelar</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </Modal>
+          )}
 
-              <TouchableOpacity
-                style={styles.modalCloseButton}
-                onPress={() => setShowRolModal(false)}
-              >
-                <Text style={styles.modalCloseButtonText}>Cancelar</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
-      )}
 
-          
 
           {/* Modal para seleccionar Sucursal */}
           <Modal
@@ -767,8 +768,8 @@ const validateForm = () => {
             onRequestClose={() => setShowSucursalModal(false)}
           >
             <View style={styles.modalOverlay}>
-              <View style={styles.modalContent}>
-                <Text style={styles.modalTitle}>Seleccionar Sucursal</Text>
+              <View style={[profile.modoOscuro ? styles.modalContentOscuro : styles.modalContentClaro]}>
+                <Text style={[styles.modalTitle, { color: profile.modoOscuro ? "#FFFFFF" : "black" }]} >Seleccionar Sucursal</Text>
                 <ScrollView style={styles.modalScroll}>
                   {sucursales.map((sucursal) => (
                     <TouchableOpacity
@@ -783,7 +784,7 @@ const validateForm = () => {
                         setShowSucursalModal(false);
                       }}
                     >
-                      <Text style={styles.modalOptionText}>
+                      <Text style={[profile.modoOscuro ? styles.modalOptionTextOscuro : styles.modalOptionTextClaro]}>
                         {sucursal.nombre || sucursal.id}
                       </Text>
                       {formData.IDSucursal === sucursal.id && (
@@ -793,7 +794,7 @@ const validateForm = () => {
                   ))}
                 </ScrollView>
                 <TouchableOpacity
-                  style={styles.modalCloseButton}
+                  style={[profile.modoOscuro ? styles.modalCloseButtonOscuro : styles.modalCloseButtonClaro]}
                   onPress={() => setShowSucursalModal(false)}
                 >
                   <Text style={styles.modalCloseButtonText}>Cancelar</Text>
@@ -810,8 +811,8 @@ const validateForm = () => {
             onRequestClose={() => setShowEstadoModal(false)}
           >
             <View style={styles.modalOverlay}>
-              <View style={styles.modalContent}>
-                <Text style={styles.modalTitle}>Seleccionar Estado</Text>
+              <View style={[profile.modoOscuro ? styles.modalContentOscuro : styles.modalContentClaro]}>
+                <Text style={[styles.modalTitle, { color: profile.modoOscuro ? "#FFFFFF" : "black" }]} >Seleccionar Estado</Text>
                 {estados.map((estado) => (
                   <TouchableOpacity
                     key={estado}
@@ -821,14 +822,14 @@ const validateForm = () => {
                       setShowEstadoModal(false);
                     }}
                   >
-                    <Text style={styles.modalOptionText}>{estado}</Text>
+                    <Text style={[profile.modoOscuro ? styles.modalOptionTextOscuro : styles.modalOptionTextClaro]}>{estado}</Text>
                     {formData.estado === estado && (
                       <Feather name="check" size={20} color="#007AFF" />
                     )}
                   </TouchableOpacity>
                 ))}
                 <TouchableOpacity
-                  style={styles.modalCloseButton}
+                  style={[profile.modoOscuro ? styles.modalCloseButtonOscuro : styles.modalCloseButtonClaro]}
                   onPress={() => setShowEstadoModal(false)}
                 >
                   <Text style={styles.modalCloseButtonText}>Cancelar</Text>
@@ -858,7 +859,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderTopRightRadius: 35,
     borderTopLeftRadius: 35,
-    marginTop: -30,
+    marginTop: -35,
     paddingBottom: 0,
     marginBottom: 0,
   },
@@ -867,7 +868,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#2C2C2C",
     borderTopRightRadius: 35,
     borderTopLeftRadius: 35,
-    marginTop: -30,
+    marginTop: -35,
     paddingBottom: 0,
     marginBottom: 0,
   },
@@ -931,37 +932,28 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 10,
     backgroundColor: "white",
-    padding: 4,
-    backgroundColor: "white",
+    paddingVertical: 4,
+    paddingHorizontal: 6,
     zIndex: 200,
-    fontWeight: 700,
+    fontWeight: "700",
     color: "#898C91",
-    fontSize: 16
+    fontSize: 16,
+    borderRadius: 8
   },
   labelOscuro: {
     position: "absolute",
     left: 10,
-    backgroundColor: "white",
-    padding: 4,
+    paddingVertical: 4,
+    paddingHorizontal: 6,
     backgroundColor: "#2C2C2C",
     zIndex: 200,
-    fontWeight: 700,
-    color: "#b4b8c0ff",
-    fontSize: 16
+    fontWeight: "700",
+    color: "#CCCCCC",
+    fontSize: 16,
+    borderRadius: 8
   },
   inputClaro: {
-    color: "black",
-    marginTop: 15,
-    borderWidth: 1,
-    borderColor: "#D9D9D9",
-    borderRadius: 8,
-    paddingLeft: 12,
-    height: 60,
-    justifyContent: "center",
-    fontSize: 16
-  },
-  inputOscuro: {
-    color: "white",
+    color: "#000000",
     marginTop: 15,
     borderWidth: 1,
     borderColor: "#D9D9D9",
@@ -970,7 +962,19 @@ const styles = StyleSheet.create({
     height: 60,
     justifyContent: "center",
     fontSize: 16,
-    backgroundColor: "#2C2C2C",
+    backgroundColor: "#FFFFFF",
+  },
+  inputOscuro: {
+    color: "#FFFFFF",
+    marginTop: 15,
+    borderWidth: 1,
+    borderColor: "#555555",
+    borderRadius: 8,
+    paddingLeft: 12,
+    height: 60,
+    justifyContent: "center",
+    fontSize: 16,
+    backgroundColor: "#1a1a1a",
   },
   selectButton: {
     flexDirection: "row",
@@ -984,7 +988,7 @@ const styles = StyleSheet.create({
   },
   selectButtonTextOscuro: {
     fontSize: 16,
-    color: "#D1D1D1" ,
+    color: "#D1D1D1",
   },
   selectButtonTextClaro: {
     fontSize: 16,
@@ -1006,8 +1010,15 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "flex-end",
   },
-  modalContent: {
+  modalContentClaro: {
     backgroundColor: "#fff",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    maxHeight: "70%",
+  },
+  modalContentOscuro: {
+    backgroundColor: "#2C2C2C",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     padding: 20,
@@ -1030,14 +1041,25 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#f0f0f0",
   },
-  modalOptionText: {
+  modalOptionTextClaro: {
     fontSize: 16,
     color: "#333",
   },
-  modalCloseButton: {
+  modalOptionTextOscuro: {
+    fontSize: 16,
+    color: "#CCCCCC",
+  },
+  modalCloseButtonClaro: {
     marginTop: 15,
     padding: 15,
     backgroundColor: "#f0f0f0",
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  modalCloseButtonOscuro: {
+    marginTop: 15,
+    padding: 15,
+    backgroundColor: "#1a1a1a",
     borderRadius: 8,
     alignItems: "center",
   },

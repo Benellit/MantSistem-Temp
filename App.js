@@ -185,6 +185,7 @@ function AdminScreens() {
       screenOptions={({ route }) => ({
         tabBarStyle: {
           backgroundColor: profile.modoOscuro === true ? "#1A1A1A" : "white",
+          borderTopWidth: 0
         },
         headerShown: false,
         tabBarIcon: ({ focused, color, size }) => {
@@ -232,6 +233,7 @@ function GestorScreens() {
       screenOptions={({ route }) => ({
         tabBarStyle: {
           backgroundColor: profile.modoOscuro ? "#1A1A1A" : "#FFFFFF",
+          borderTopWidth: 0
         },
         headerShown: false,
         tabBarIcon: ({ focused, color, size }) => {
@@ -268,6 +270,7 @@ function TecnicoScreens() {
       screenOptions={({ route }) => ({
         tabBarStyle: {
           backgroundColor: profile.modoOscuro ? "#1A1A1A" : "#FFFFFF",
+          borderTopWidth: 0
         },
         headerShown: false,
         tabBarIcon: ({ focused, color, size }) => {

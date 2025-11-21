@@ -18,6 +18,7 @@ import {
     setDoc,
     updateDoc,
     where,
+    Timestamp, // importado Timestamp para procesarTareasRepetitivas
 } from "firebase/firestore"
 import { useEffect, useState } from "react"
 import {
@@ -31,6 +32,7 @@ import {
     TextInput,
     TouchableOpacity,
     View,
+    Modal,
 } from "react-native"
 import DropDownPicker from "react-native-dropdown-picker"
 import DateTimePickerModal from "react-native-modal-datetime-picker"
@@ -270,6 +272,168 @@ const RegistrarTareasGestor = ({ navigation }) => {
 
     // CREAR TAREAS ------------------------------
     const [loading, setLoading] = useState(false)
+    const [modalRepetitivas, setModalRepetitivas] = useState(false)
+    // const [responseModalRepe, setResponseModalRepe] = useState(false) // Eliminado estado responseModalRepe
+    const [plantillaCreada, setPlantillaCreada] = useState(null)
+
+    const validarFrecuencia = (frecuencia, fechaActual, fechaUltimaCreacion) => {
+        if (!fechaUltimaCreacion) return true
+
+        const ultima = fechaUltimaCreacion.toDate()
+        const actual = new Date(fechaActual)
+
+        switch (frecuencia) {
+            case "diario":
+                return true
+            case "semanal":
+                const diffDias = Math.floor((actual - ultima) / (1000 * 60 * 60 * 24))
+                return diffDias >= 7
+            case "mensual":
+                return actual.getMonth() !== ultima.getMonth() || actual.getFullYear() !== ultima.getFullYear()
+            default:
+                return false
+        }
+    }
+
+    const procesarTareasRepetitivas = async (idPlantilla) => {
+        try {
+            const plantillaDoc = await getDoc(doc(db, "TAREA_REPETITIVAS", idPlantilla))
+
+            if (!plantillaDoc.exists()) {
+                console.error("La plantilla no existe")
+                return
+            }
+
+            const plantilla = plantillaDoc.data()
+
+            if (!plantilla.activa) {
+                console.log("La plantilla no está activa")
+                return
+            }
+
+            const hoy = new Date()
+            hoy.setHours(0, 0, 0, 0)
+
+            // Evitar duplicados en el día
+            if (plantilla.fechaUltimaCreacion) {
+                const ultima = plantilla.fechaUltimaCreacion.toDate()
+                ultima.setHours(0, 0, 0, 0)
+                if (ultima.getTime() === hoy.getTime()) {
+                    console.log("Ya se creó una tarea hoy desde esta plantilla")
+                    return
+                }
+            }
+
+            // Obtener la fecha actual en UTC
+            const ahoraUTC = new Date()
+
+            // Crear fecha con hora local (America/Tijuana) pero en contexto UTC
+            const offsetTijuana = -8 // UTC-8 para America/Tijuana
+            const horaUTCInicio = plantilla.horaInicio.hour - offsetTijuana
+            const horaUTCEntrega = plantilla.horaEntrega.hour - offsetTijuana
+
+            // Fecha de creación en hora local
+            const fechaCreacion = new Date();
+            fechaCreacion.setHours(
+                plantilla.horaInicio.hour,
+                plantilla.horaInicio.minute,
+                0,
+                0
+            );
+            fechaCreacion.setMilliseconds(0);
+
+            // Fecha de entrega en hora local
+            const fechaEntrega = new Date(fechaCreacion);
+            fechaEntrega.setDate(
+                fechaCreacion.getDate() + (plantilla.duracionDias || 0)
+            );
+            fechaEntrega.setHours(
+                plantilla.horaEntrega.hour,
+                plantilla.horaEntrega.minute,
+                0,
+                0
+            );
+            fechaEntrega.setMilliseconds(0);
+
+
+            // Tipo de tarea final
+            const tipoTareaFinal = plantilla.tipoTarea === "repje" ? "jerarquia" : "simple"
+
+            const contadorActual = await getContadorTarea()
+            const nuevoNumero = contadorActual + 1
+
+            const nuevaTarea = {
+                IDPlantilla: doc(db, "TAREA_REPETITIVAS", idPlantilla),
+                tipoTarea: tipoTareaFinal,
+                nombre: plantilla.nombre,
+                descripcion: plantilla.descripcion,
+                prioridad: plantilla.prioridad,
+                estado: "Pendiente",
+                fechaCreacion: Timestamp.fromDate(fechaCreacion),
+                fechaEntrega: Timestamp.fromDate(fechaEntrega),
+                IDCreador: plantilla.IDCreador,
+                IDSucursal: plantilla.IDSucursal,
+                imagenAdjuntaInstrucciones: plantilla.imagenAdjuntaInstrucciones || [],
+            }
+
+            const tareaRef = doc(db, "TAREA", nuevoNumero.toString())
+            await setDoc(tareaRef, nuevaTarea)
+
+            // Copiar técnicos
+            const tecnicos = await getDocs(collection(db, `TAREA_REPETITIVAS/${idPlantilla}/Tecnicos`))
+            for (const tec of tecnicos.docs) {
+                await addDoc(collection(db, `TAREA/${nuevoNumero.toString()}/Tecnicos`), {
+                    IDUsuario: tec.data().IDUsuario,
+                    fechaAsignacion: Timestamp.now(),
+                })
+            }
+
+            // Copiar subtareas SOLO si es jerarquía
+            if (tipoTareaFinal === "jerarquia") {
+                const subtareas = await getDocs(collection(db, `TAREA_REPETITIVAS/${idPlantilla}/Subtareas`))
+                for (const sub of subtareas.docs) {
+                    await addDoc(collection(db, `TAREA/${nuevoNumero.toString()}/Subtareas`), {
+                        nombre: sub.data().nombre,
+                        descripcion: sub.data().descripcion,
+                        orden: sub.data().orden,
+                        estado: "pendiente",
+                    })
+                }
+            }
+
+            // Registrar en historial
+            await addDoc(collection(db, `TAREA_REPETITIVAS/${idPlantilla}/HistorialTareas`), {
+                IDTarea: nuevoNumero.toString(),
+                fechaCreacion: Timestamp.fromDate(fechaCreacion),
+                fechaEntrega: Timestamp.fromDate(fechaEntrega),
+            })
+
+            // Actualizar fecha última creación
+            await updateDoc(doc(db, "TAREA_REPETITIVAS", idPlantilla), {
+                fechaUltimaCreacion: Timestamp.fromDate(fechaCreacion),
+            })
+
+            // Actualizar contador
+            const contadorRef = doc(db, "contador", "tarea")
+            await updateDoc(contadorRef, { cantidad: nuevoNumero })
+
+            Toast.show({
+                type: "success",
+                text1: "Éxito",
+                text2: "Tarea creada desde la plantilla",
+            })
+
+            console.log("Tarea creada exitosamente desde plantilla:", nuevoNumero)
+        } catch (error) {
+            console.error("Error al procesar tarea repetitiva:", error)
+            Toast.show({
+                type: "error",
+                text1: "Error",
+                text2: "No se pudo crear la tarea desde la plantilla",
+            })
+        }
+    }
+
     const saveTareas = async () => {
         if (loading) return
         setLoading(true)
@@ -316,7 +480,7 @@ const RegistrarTareasGestor = ({ navigation }) => {
                 !arrayValueTecnicos ||
                 arrayValueTecnicos.length === 0
             ) {
-                Alert.alert("Faltan campos", "Revisa los datos básicos de la tarea")
+                Alert.Alert("Faltan campos", "Revisa los datos básicos de la tarea")
                 setLoading(false)
                 return
             }
@@ -325,6 +489,10 @@ const RegistrarTareasGestor = ({ navigation }) => {
                 setLoading(false)
                 return
             }
+
+            setLoading(false)
+            setModalRepetitivas(true)
+            return
         } else if (tipoTarea === "jerarquia") {
             if (
                 !nombre?.trim() ||
@@ -353,7 +521,7 @@ const RegistrarTareasGestor = ({ navigation }) => {
                 !arrayValueTecnicos ||
                 arrayValueTecnicos.length === 0
             ) {
-                Alert.Alert("Faltan campos", "Revisa los datos básicos de la tarea")
+                Alert.alert("Faltan campos", "Revisa los datos básicos de la tarea")
                 setLoading(false)
                 return
             }
@@ -367,10 +535,22 @@ const RegistrarTareasGestor = ({ navigation }) => {
                 setLoading(false)
                 return
             }
+
+            setLoading(false)
+            setModalRepetitivas(true)
+            return
         }
+
+        // Continuar con el guardado normal
+        await ejecutarGuardadoTarea()
+    }
+
+    const ejecutarGuardadoTarea = async (crearTareaAhora = false) => {
+        setLoading(true)
 
         // subir imagenes de tareas
         console.log("Datos válidos, intentando crear tarea...")
+        console.log("[v0] crearTareaAhora:", crearTareaAhora) // Log de depuración
         try {
             const contadorActual = await getContadorTarea()
             const nuevoNumero = contadorActual + 1
@@ -478,6 +658,11 @@ const RegistrarTareasGestor = ({ navigation }) => {
                             IDUsuario: doc(db, "USUARIO", tecnico.value),
                             fechaDeAsignacion: new Date(),
                         })
+                    }
+
+                    if (crearTareaAhora) {
+                        console.log("[v0] Ejecutando procesarTareasRepetitivas con ID:", nuevaTareaRef.id)
+                        await procesarTareasRepetitivas(nuevaTareaRef.id)
                     }
 
                     setImagenes([])
@@ -682,6 +867,11 @@ const RegistrarTareasGestor = ({ navigation }) => {
                             })
                         }
 
+                        if (crearTareaAhora) {
+                            console.log("[v0] Ejecutando procesarTareasRepetitivas con ID:", nuevaTareaRefRepJe.id)
+                            await procesarTareasRepetitivas(nuevaTareaRefRepJe.id)
+                        }
+
                         // Limpiar campos
                         setImagenes([])
                         setNombre("")
@@ -720,7 +910,7 @@ const RegistrarTareasGestor = ({ navigation }) => {
                     break
             }
         } catch (error) {
-            console.error("Error creando tarea:", error)
+            console.error("Error general al crear tarea:", error)
             Toast.show({
                 type: "error",
                 text1: "Error",
@@ -822,9 +1012,9 @@ const RegistrarTareasGestor = ({ navigation }) => {
     }
 
     // Duracion de la tarea en dias
-    const [dias, setDias] = useState(1)
+    const [dias, setDias] = useState(0)
     const aumentar = () => setDias((prev) => Math.min(prev + 1, 30))
-    const disminuir = () => setDias((prev) => Math.max(prev - 1, 1))
+    const disminuir = () => setDias((prev) => Math.max(prev - 1, 0))
 
     // ACOMODAR ARRAY TECNICOS
     const acomodarArrayConTecnicos = () => {
@@ -942,11 +1132,11 @@ const RegistrarTareasGestor = ({ navigation }) => {
     return (
         <View style={{ flex: 1 }}>
             <LinearGradient
-                colors={["#87aef0", "#9c8fc4"]}
+                colors={profile.modoOscuro ? ["#1A1A2E", "#16213E"] : ["#667EEA", "#764BA2"]}
                 start={{ x: 0.5, y: 0.4 }}
                 end={{ x: 0.5, y: 1 }}
                 style={{
-                    height: 155,
+                    height: 165,
                 }}
             >
                 <View style={{ paddingTop: 40, paddingLeft: 10 }}>
@@ -1795,6 +1985,39 @@ const RegistrarTareasGestor = ({ navigation }) => {
                         </View>
                     </View>
                 </ScrollView>
+                <Modal
+                    transparent
+                    visible={modalRepetitivas}
+                    animationType="fade"
+                    onRequestClose={() => setModalRepetitivas(false)}
+                >
+                    <View style={styles.modalOverlay}>
+                        <View style={styles.modalContainer}>
+                            <Text style={styles.modalTitle}>Crear Tarea Ahora</Text>
+                            <Text style={styles.modalMessage}>¿Quieres que se cree una tarea ahora en base a la plantilla?</Text>
+                            <View style={styles.modalButtons}>
+                                <TouchableOpacity
+                                    style={[styles.modalButton, styles.modalButtonNo]}
+                                    onPress={() => {
+                                        setModalRepetitivas(false)
+                                        ejecutarGuardadoTarea(false)
+                                    }}
+                                >
+                                    <Text style={styles.modalButtonText}>No</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    style={[styles.modalButton, styles.modalButtonYes]}
+                                    onPress={() => {
+                                        setModalRepetitivas(false)
+                                        ejecutarGuardadoTarea(true)
+                                    }}
+                                >
+                                    <Text style={styles.modalButtonText}>Sí</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </View>
+                </Modal>
             </View>
         </View>
     )
@@ -1806,7 +2029,7 @@ const styles = StyleSheet.create({
         backgroundColor: "#FFFFFF",
         borderTopRightRadius: 35,
         borderTopLeftRadius: 35,
-        marginTop: -30,
+        marginTop: -35,
         paddingBottom: 0,
         marginBottom: 0,
     },
@@ -1815,7 +2038,7 @@ const styles = StyleSheet.create({
         backgroundColor: "#2C2C2C",
         borderTopRightRadius: 35,
         borderTopLeftRadius: 35,
-        marginTop: -30,
+        marginTop: -35,
         paddingBottom: 0,
         marginBottom: 0,
     },
@@ -1836,7 +2059,7 @@ const styles = StyleSheet.create({
         fontWeight: "700",
         color: "#898C91",
         fontSize: 16,
-        borderRadius: 8
+        borderRadius: 8,
     },
     labelOscuro: {
         position: "absolute",
@@ -1848,7 +2071,7 @@ const styles = StyleSheet.create({
         fontWeight: "700",
         color: "#CCCCCC",
         fontSize: 16,
-        borderRadius: 8
+        borderRadius: 8,
     },
     inputClaro: {
         color: "#000000",
@@ -2082,6 +2305,59 @@ const styles = StyleSheet.create({
     },
     imageContainer: {
         position: "relative",
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: "rgba(0, 0, 0, 0.5)",
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    modalContainer: {
+        backgroundColor: "#FFFFFF",
+        borderRadius: 10,
+        padding: 20,
+        width: "80%",
+        maxWidth: 400,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 5,
+    },
+    modalTitle: {
+        fontSize: 20,
+        fontWeight: "bold",
+        marginBottom: 10,
+        textAlign: "center",
+        color: "#333",
+    },
+    modalMessage: {
+        fontSize: 16,
+        marginBottom: 20,
+        textAlign: "center",
+        color: "#666",
+    },
+    modalButtons: {
+        flexDirection: "row",
+        justifyContent: "space-around",
+    },
+    modalButton: {
+        flex: 1,
+        paddingVertical: 12,
+        marginHorizontal: 5,
+        borderRadius: 8,
+        alignItems: "center",
+    },
+    modalButtonNo: {
+        backgroundColor: "#E0E0E0",
+    },
+    modalButtonYes: {
+        backgroundColor: "#4CAF50",
+    },
+    modalButtonText: {
+        fontSize: 16,
+        fontWeight: "600",
+        color: "#FFFFFF",
     },
 })
 

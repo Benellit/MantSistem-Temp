@@ -264,8 +264,9 @@ const ModalFiltros = ({ open, setOpenFiltros, setFiltros, filtros }) => {
                             <TouchableOpacity
                                 style={[styles.botonQuitarfiltros, { flex: 1 }]}
                                 onPress={() => {
-                                    setFiltros({ sucursal: null, prioridad: null, estado: null });
-                                    setOpenFiltros(false);
+                                    setValueEstado('')
+                                    setValuePrioridad('')
+                                    setValueSucursal('')
                                 }}
                             >
                                 <Text style={profile.modoOscuro ? { color: "#b4b3b3ff", fontWeight: 800, fontSize: 15 } : { color: 'white', fontWeight: 800, fontSize: 15 }}>

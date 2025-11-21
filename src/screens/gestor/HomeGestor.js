@@ -7,9 +7,12 @@ import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons"
 import { LinearGradient } from "expo-linear-gradient"
 import { collection, collectionGroup, doc, getDoc, getDocs, getFirestore, orderBy, query, where } from "firebase/firestore"
 import { useEffect, useState } from "react"
-import { ActivityIndicator, Dimensions, Image, Modal, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native"
+import { ActivityIndicator, Dimensions, Image, Modal, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View, Platform } from "react-native"
 import appFirebase from "../../credenciales/Credenciales"
 import { useAuth } from "../login/AuthContext"
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const CARD_WIDTH = (SCREEN_WIDTH - 45) / 2;
 
 export default function DashboardGestor({ navigation }) {
     const db = getFirestore(appFirebase)
@@ -108,9 +111,9 @@ export default function DashboardGestor({ navigation }) {
 
             // Ordenar por fecha de entrega (más vencida primero)
             tareasAtrasadasData.sort((a, b) => {
-                const fechaA = a.fechaEntrega.toDate ? a.fechaEntrega.toDate() : new Date(a.fechaEntrega)
-                const fechaB = b.fechaEntrega.toDate ? b.fechaEntrega.toDate() : new Date(b.fechaEntrega)
-                return fechaA - fechaB
+                const fechaA = a.fechaCreacion.toDate?.() || new Date(a.fechaCreacion);
+                const fechaB = b.fechaCreacion.toDate?.() || new Date(b.fechaCreacion);
+                return fechaB - fechaA;
             })
 
             const tareasAtrasadas = tareasAtrasadasData.length
@@ -232,7 +235,7 @@ export default function DashboardGestor({ navigation }) {
 
     if (loading) {
         return (
-            <LinearGradient colors={["#87aef0", "#9c8fc4"]} start={{ x: 0.5, y: 0.4 }} end={{ x: 0.5, y: 1 }} style={{ flex: 1 }}>
+            <LinearGradient colors={profile.modoOscuro ? ['#1A1A2E', '#16213E'] : ['#667EEA', '#764BA2']} start={{ x: 0.5, y: 0.4 }} end={{ x: 0.5, y: 1 }} style={{ flex: 1 }}>
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color="#87aef0" />
                     <Text style={styles.loadingText}>Cargando dashboard...</Text>
@@ -242,28 +245,36 @@ export default function DashboardGestor({ navigation }) {
     }
 
     return (
-        <LinearGradient colors={["#87aef0", "#9c8fc4"]} start={{ x: 0.5, y: 0.4 }} end={{ x: 0.5, y: 1 }} style={{ flex: 1 }}>
+        <LinearGradient colors={profile.modoOscuro ? ['#1A1A2E', '#16213E'] : ['#667EEA', '#764BA2']} start={{ x: 0.5, y: 0.4 }} end={{ x: 0.5, y: 1 }} style={{ flex: 1 }}>
             <View style={{ flex: 1 }}>
-                <View style={profile.modoOscuro ? styles.headerOscuro : styles.headerClaro}>
-                    <Text style={profile.modoOscuro ? styles.tituloOscuro : styles.tituloClaro}>Panel de Gestión</Text>
-                    <Text style={profile.modoOscuro ? styles.subtituloOscuro : styles.subtituloClaro}>
-                        Supervisión de Equipo
-                    </Text>
+                <View style={styles.header}>
+                    <View>
+                        <Text style={styles.tituloOscuro}>Panel de Gestión</Text>
+                        <Text style={styles.subtituloOscuro}>
+                            Supervisión de Sucursal
+                        </Text>
+                    </View>
+                    <TouchableOpacity
+                        style={[styles.refreshButton, profile.modoOscuro && styles.refreshButtonDark]}
+                        onPress={onRefresh}
+                    >
+                        <Ionicons name="refresh" size={22} color={profile.modoOscuro ? '#FFF' : '#667EEA'} />
+                    </TouchableOpacity>
                 </View>
 
                 <ScrollView
                     style={styles.scrollContainer}
                     refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
                 >
-                   
+
 
                     {/* Estado general de tareas */}
-                    <View style={styles.section}>
-                        <Text style={profile.modoOscuro ? styles.tituloSeccionOscuro : styles.tituloSeccionClaro}>
+                    <View style={[styles.section, { marginTop: 0 }]}>
+                        {/* <Text style={styles.tituloSeccionOscuro}>
                             Estado General de Tareas
-                        </Text>
+                        </Text> */}
 
-                        <View style={[styles.tarjetaProgreso, profile.modoOscuro && styles.tarjetaProgresoOscuro]}>
+                        {/* <View style={[styles.tarjetaProgreso, profile.modoOscuro && styles.tarjetaProgresoOscuro, { marginBottom: 15 }]}>
                             <Text style={[styles.porcentajeProgreso, profile.modoOscuro && styles.porcentajeProgresoOscuro]}>
                                 {calcularProgresoGeneral()}%
                             </Text>
@@ -280,17 +291,19 @@ export default function DashboardGestor({ navigation }) {
                                                 calcularProgresoGeneral() >= 75
                                                     ? "#47A997"
                                                     : calcularProgresoGeneral() >= 50
-                                                    ? "#57A7FE"
-                                                    : "#F4C54C",
+                                                        ? "#57A7FE"
+                                                        : "#F4C54C",
                                         },
                                     ]}
                                 />
                             </View>
-                        </View>
+                        </View> */}
 
                         <View style={styles.tarjetasGrid}>
                             <View style={[styles.tarjetaEstado, profile.modoOscuro && styles.tarjetaEstadoOscuro]}>
-                                <Ionicons name="apps" size={24} color="#87aef0" />
+                                <View style={[styles.metricIcon, { backgroundColor: "#465f8a7d" }]}>
+                                    <Ionicons name="apps" size={24} color="#87aef0" />
+                                </View>
                                 <Text style={[styles.numeroEstado, profile.modoOscuro && styles.numeroEstadoOscuro]}>
                                     {dashboardData.totalTareas}
                                 </Text>
@@ -298,7 +311,19 @@ export default function DashboardGestor({ navigation }) {
                             </View>
 
                             <View style={[styles.tarjetaEstado, profile.modoOscuro && styles.tarjetaEstadoOscuro]}>
-                                <Ionicons name="time-outline" size={24} color="#57A7FE" />
+                                <View style={[styles.metricIcon, { backgroundColor: '#FFA50220' }]}>
+                                    <Ionicons name="time" size={28} color="#FFA502" />
+                                </View>
+                                <Text style={[styles.numeroEstado, profile.modoOscuro && styles.numeroEstadoOscuro]}>
+                                    {dashboardData.tareasPendientes}
+                                </Text>
+                                <Text style={[styles.labelEstado, profile.modoOscuro && styles.labelEstadoOscuro]}>Pendientes</Text>
+                            </View>
+
+                            <View style={[styles.tarjetaEstado, profile.modoOscuro && styles.tarjetaEstadoOscuro]}>
+                                <View style={[styles.metricIcon, { backgroundColor: '#5352ED20' }]}>
+                                    <Ionicons name="time" size={28} color="#57A7FE" />
+                                </View>
                                 <Text style={[styles.numeroEstado, profile.modoOscuro && styles.numeroEstadoOscuro]}>
                                     {dashboardData.tareasEnProceso}
                                 </Text>
@@ -306,20 +331,15 @@ export default function DashboardGestor({ navigation }) {
                             </View>
 
                             <View style={[styles.tarjetaEstado, profile.modoOscuro && styles.tarjetaEstadoOscuro]}>
-                                <Ionicons name="checkmark-done" size={24} color="#47A997" />
+                                <View style={[styles.metricIcon, { backgroundColor: '#2ED57320' }]}>
+                                    <Ionicons name="checkmark-done" size={24} color="#47A997" />
+                                </View>
                                 <Text style={[styles.numeroEstado, profile.modoOscuro && styles.numeroEstadoOscuro]}>
                                     {dashboardData.tareasCompletadas}
                                 </Text>
                                 <Text style={[styles.labelEstado, profile.modoOscuro && styles.labelEstadoOscuro]}>Completadas</Text>
                             </View>
 
-                            <View style={[styles.tarjetaEstado, profile.modoOscuro && styles.tarjetaEstadoOscuro]}>
-                                <Ionicons name="ellipse-outline" size={24} color="#F4C54C" />
-                                <Text style={[styles.numeroEstado, profile.modoOscuro && styles.numeroEstadoOscuro]}>
-                                    {dashboardData.tareasPendientes}
-                                </Text>
-                                <Text style={[styles.labelEstado, profile.modoOscuro && styles.labelEstadoOscuro]}>Pendientes</Text>
-                            </View>
                         </View>
                     </View>
 
@@ -327,7 +347,7 @@ export default function DashboardGestor({ navigation }) {
                     {dashboardData.tareasAtrasadas > 0 && (
                         <View style={styles.section}>
                             <TouchableOpacity
-                                style={styles.alertBannerAtrasadas}
+                                style={[styles.alertBannerAtrasadas, { backgroundColor: profile.modoOscuro ? "#2C2C2C" : "white" }]}
                                 onPress={() => setModalVisible(true)}
                             >
                                 <View style={styles.alertBannerContent}>
@@ -413,7 +433,7 @@ export default function DashboardGestor({ navigation }) {
                     {/* Actividad reciente */}
                     {dashboardData.actividadReciente.length > 0 && (
                         <View style={styles.section}>
-                            <Text style={profile.modoOscuro ? styles.tituloSeccionOscuro : styles.tituloSeccionClaro}>
+                            <Text style={styles.tituloSeccionOscuro}>
                                 Actividad Reciente
                             </Text>
                             {dashboardData.actividadReciente.map((actividad) => (
@@ -446,9 +466,9 @@ export default function DashboardGestor({ navigation }) {
                             ))}
                         </View>
                     )}
-                     {/* Últimos usuarios asignados */}
+                    {/* Últimos usuarios asignados */}
                     <View style={styles.section}>
-                        <Text style={profile.modoOscuro ? styles.tituloSeccionOscuro : styles.tituloSeccionClaro}>
+                        <Text style={styles.tituloSeccionOscuro}>
                             Últimos Usuarios Asignados
                         </Text>
                         {dashboardData.ultimosUsuarios.length > 0 ? (
@@ -469,9 +489,8 @@ export default function DashboardGestor({ navigation }) {
                                     />
                                     <View style={styles.usuarioInfo}>
                                         <Text style={[styles.usuarioNombre, profile.modoOscuro && styles.usuarioNombreOscuro]}>
-                                            {`${usuario.primerNombre || ""} ${usuario.segundoNombre || ""} ${usuario.primerApellido || ""} ${
-                                                usuario.segundoApellido || ""
-                                            }`.trim()}
+                                            {`${usuario.primerNombre || ""} ${usuario.segundoNombre || ""} ${usuario.primerApellido || ""} ${usuario.segundoApellido || ""
+                                                }`.trim()}
                                         </Text>
                                         <Text style={[styles.usuarioEmail, profile.modoOscuro && styles.usuarioEmailOscuro]}>
                                             {usuario.email}
@@ -485,8 +504,8 @@ export default function DashboardGestor({ navigation }) {
                                                             usuario.rol === "Administrador"
                                                                 ? "#B383E2"
                                                                 : usuario.rol === "Gestor"
-                                                                ? "#57A7FE"
-                                                                : "#47A997",
+                                                                    ? "#57A7FE"
+                                                                    : "#47A997",
                                                     },
                                                 ]}
                                             >
@@ -621,27 +640,13 @@ const styles = StyleSheet.create({
         fontWeight: "600",
         color: "#fff",
     },
-    headerClaro: {
-        paddingTop: 16,
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
         paddingHorizontal: 20,
-        paddingBottom: 15,
-        backgroundColor: "white",
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 5,
-        elevation: 16,
-    },
-    headerOscuro: {
-        paddingTop: 16,
-        paddingHorizontal: 20,
-        paddingBottom: 15,
-        backgroundColor: "#1A1A1A",
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 5,
-        elevation: 16,
+        paddingTop: Platform.OS === 'ios' ? 60 : 40,
+        paddingBottom: 20,
     },
     tituloClaro: {
         color: "black",
@@ -774,16 +779,20 @@ const styles = StyleSheet.create({
         justifyContent: "space-between",
     },
     tarjetaProgreso: {
-        backgroundColor: "white",
-        borderRadius: 12,
+        backgroundColor: '#FFF',
+        borderRadius: 16,
         padding: 20,
-        alignItems: "center",
-        elevation: 2,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        marginBottom: 12,
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.1,
+                shadowRadius: 12,
+            },
+            android: {
+                elevation: 4,
+            },
+        }),
     },
     tarjetaProgresoOscuro: {
         backgroundColor: "#2C2C2C",
@@ -797,13 +806,13 @@ const styles = StyleSheet.create({
         color: "#87aef0",
     },
     labelProgreso: {
-        fontSize: 14,
-        fontWeight: "600",
-        color: "#666",
-        marginTop: 4,
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#1A1A2E',
+        marginLeft: 8,
     },
     labelProgresoOscuro: {
-        color: "#B0B0B0",
+        color: 'white',
     },
     barraProgresoContainer: {
         width: "100%",
@@ -818,37 +827,42 @@ const styles = StyleSheet.create({
         borderRadius: 4,
     },
     tarjetaEstado: {
-        backgroundColor: "white",
-        borderRadius: 12,
-        padding: 12,
-        width: "48%",
-        alignItems: "center",
-        elevation: 2,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
+        width: CARD_WIDTH,
+        backgroundColor: '#FFF',
+        borderRadius: 16,
+        padding: 16,
+        marginBottom: 12,
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.1,
+                shadowRadius: 12,
+            },
+            android: {
+                elevation: 4,
+            },
+        }),
     },
     tarjetaEstadoOscuro: {
         backgroundColor: "#2C2C2C",
     },
     numeroEstado: {
-        fontSize: 24,
-        fontWeight: "800",
-        color: "#1a1a1a",
-        marginTop: 6,
+        fontSize: 32,
+        fontWeight: '800',
+        color: '#1A1A2E',
+        marginBottom: 4,
     },
     numeroEstadoOscuro: {
         color: "#ffffff",
     },
     labelEstado: {
-        fontSize: 12,
-        fontWeight: "600",
-        color: "#666",
-        marginTop: 4,
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#666',
     },
     labelEstadoOscuro: {
-        color: "#B0B0B0",
+        ccolor: '#FFF',
     },
     alertBanner: {
         backgroundColor: "#FFF9E6",
@@ -1124,5 +1138,35 @@ const styles = StyleSheet.create({
     modalBadgeText: {
         fontSize: 11,
         fontWeight: "700",
+    },
+    refreshButton: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: '#FFF',
+        justifyContent: 'center',
+        alignItems: 'center',
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.1,
+                shadowRadius: 8,
+            },
+            android: {
+                elevation: 4,
+            },
+        }),
+    },
+    refreshButtonDark: {
+        backgroundColor: '#2C2C3E',
+    },
+    metricIcon: {
+        width: 48,
+        height: 48,
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 12,
     },
 })

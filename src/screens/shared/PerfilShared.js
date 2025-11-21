@@ -21,7 +21,8 @@ import AntDesign from "@expo/vector-icons/AntDesign";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import Toast from "react-native-toast-message";
 import { getAuth, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from "firebase/auth";
-import ConfirmSheet from "../../ui/ConfirmSheet"; 
+import ConfirmSheet from "../../ui/ConfirmSheet";
+import { LinearGradient } from "expo-linear-gradient"
 
 
 const db = getFirestore(appFirebase);
@@ -65,7 +66,7 @@ const themeLight = {
 const themeDark = {
   name: "dark",
   // Bases
-  bg: "#121418",            // neutro frío (menos azulado que #0b1220)
+  bg: '#2C2C3E',            // neutro frío (menos azulado que #0b1220)
   card: "#171A20",
   cardAlt: "#1B1F26",
   // Texto
@@ -154,9 +155,9 @@ export default function PerfilShared({ navigation }) {
 
   // Tema actual (se recalcula cuando cambia modoOscuro)
   const theme = useMemo(
-  () => (userData.modoOscuro ? themeDark : themeLight),
-  [userData.modoOscuro]
-);
+    () => (userData.modoOscuro ? themeDark : themeLight),
+    [userData.modoOscuro]
+  );
 
 
   const styles = useMemo(() => createStyles(theme), [theme]);
@@ -207,7 +208,7 @@ export default function PerfilShared({ navigation }) {
 
       if (status !== "granted") {
         Toast.show({
-        type: "appError",
+          type: "appError",
           text1: "Permiso denegado",
           text2: "Autoriza el acceso a tu galería para continuar.",
         });
@@ -229,7 +230,7 @@ export default function PerfilShared({ navigation }) {
         );
         setUserData((prev) => ({ ...prev, fotoPerfil: imageUrl }));
         Toast.show({
-        type: "appSuccess",
+          type: "appSuccess",
           text1: "Foto actualizada",
           text2: "Imagen cargada correctamente.",
         });
@@ -238,7 +239,7 @@ export default function PerfilShared({ navigation }) {
     } catch (error) {
       console.error("Error seleccionando imagen:", error);
       Toast.show({
-      type: "appError",
+        type: "appError",
         text1: "No se pudo cargar",
         text2: "Ocurrió un error al subir la imagen.",
       });
@@ -255,10 +256,10 @@ export default function PerfilShared({ navigation }) {
 
       if (status !== "granted") {
         Toast.show({
-        type: "appError",
-        text1: "Permiso denegado",
-        text2: "Autoriza el acceso a la cámara para continuar.",
-      });
+          type: "appError",
+          text1: "Permiso denegado",
+          text2: "Autoriza el acceso a la cámara para continuar.",
+        });
 
 
         return;
@@ -277,7 +278,7 @@ export default function PerfilShared({ navigation }) {
         );
         setUserData((prev) => ({ ...prev, fotoPerfil: imageUrl }));
         Toast.show({
-        type: "appSuccess",
+          type: "appSuccess",
           text1: "Foto actualizada",
           text2: "Foto tomada correctamente.",
         });
@@ -390,8 +391,15 @@ export default function PerfilShared({ navigation }) {
       <View style={[styles.loadingContainer]}>
         <StatusBar
           barStyle={theme.name === "dark" ? "light-content" : "dark-content"}
-          backgroundColor={theme.bg}
         />
+        <LinearGradient
+          colors={profile.modoOscuro ? ['#1A1A2E', '#16213E'] : ['#667EEA', '#764BA2']}
+          start={{ x: 0.5, y: 0.4 }}
+          end={{ x: 0.5, y: 1 }}
+          style={{ flex: 1 }}
+        >
+
+        </LinearGradient>
         <ActivityIndicator size="large" color={theme.primary} />
         <Text style={styles.loadingText}>Cargando perfil...</Text>
       </View>
@@ -403,8 +411,15 @@ export default function PerfilShared({ navigation }) {
       <View style={styles.container}>
         <StatusBar
           barStyle={theme.name === "dark" ? "light-content" : "dark-content"}
-          backgroundColor={theme.bg}
         />
+        <LinearGradient
+          colors={profile.modoOscuro ? ['#1A1A2E', '#16213E'] : ['#667EEA', '#764BA2']}
+          start={{ x: 0.5, y: 0.4 }}
+          end={{ x: 0.5, y: 1 }}
+          style={{ flex: 1 }}
+        >
+
+        </LinearGradient>
         <Text style={{ color: theme.text }}>No hay sesión activa</Text>
       </View>
     );
@@ -415,404 +430,412 @@ export default function PerfilShared({ navigation }) {
       style={styles.container}
       contentContainerStyle={styles.contentContainer}
     >
-      <StatusBar
-        barStyle={theme.name === "dark" ? "light-content" : "dark-content"}
-        backgroundColor={theme.card}
-      />
+      <LinearGradient
+        colors={profile.modoOscuro ? ['#1A1A2E', '#16213E'] : ['#667EEA', '#764BA2']}
+        start={{ x: 0.5, y: 0.4 }}
+        end={{ x: 0.5, y: 1 }}
+        style={{ flex: 1, paddingBottom: 25 }}
+      >
+        <StatusBar
+          barStyle={theme.name === "dark" ? "light-content" : "dark-content"}
+        />
 
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.title}>Mi perfil</Text>
-        <View style={styles.headerActions}>
+
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.title}>Mi perfil</Text>
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              onPress={() => {
+                if (isEditing && isDirty) {
+                  setShowExitEdit(true);
+                } else {
+                  setIsEditing(!isEditing);
+                }
+              }}
+              style={[styles.editButton, isEditing && styles.editButtonActive]}
+            >
+              <Feather name={isEditing ? "x" : "edit-2"} size={18} color={theme.primary} />
+            </TouchableOpacity>
+
+            <ConfirmSheet
+              visible={showExitEdit}
+              title="Cambios sin guardar"
+              message="Tienes cambios sin guardar."
+              cancelText="Descartar"
+              confirmText="Guardar"
+              destructive
+              onCancel={() => {
+                if (initialUserData) setUserData({ ...initialUserData });
+                setIsEditing(false);
+                setShowExitEdit(false);
+              }}
+              onConfirm={() => {
+                setShowExitEdit(false);
+                handleSave();
+              }}
+              theme={theme}
+            />
+
+
+
+            <TouchableOpacity
+              style={[
+                styles.darkModeToggle,
+                userData.modoOscuro && styles.darkModeToggleActive,
+              ]}
+              onPress={handleToggleDarkMode}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel={
+                userData.modoOscuro ? "Cambiar a modo claro" : "Cambiar a modo oscuro"
+              }
+
+            >
+              <Ionicons
+                name={userData.modoOscuro ? "sunny" : "moon"}
+                size={18}
+                color={theme.toggleIcon}
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Foto de perfil */}
+        <View style={styles.photoSection}>
+          <View style={styles.photoCard}>
+            <View style={styles.photoWrapper}>
+              {userData.fotoPerfil ? (
+                <Image
+                  source={{ uri: userData.fotoPerfil }}
+                  style={styles.profilePhoto}
+                />
+              ) : (
+                <View style={[styles.profilePhoto, styles.photoPlaceholder]}>
+                  <AntDesign name="user" size={60} color={theme.placeholder} />
+                </View>
+              )}
+
+              {uploadingImage && (
+                <View style={styles.uploadingOverlay}>
+                  <ActivityIndicator size="large" color="#fff" />
+                </View>
+              )}
+            </View>
+
+            {isEditing && !uploadingImage && (
+              <TouchableOpacity
+                style={styles.changePhotoButton}
+                onPress={handleChangePhoto}
+              >
+                <Ionicons name="camera" size={20} color={theme.primary} />
+                <Text style={styles.changePhotoText}>Cambiar foto</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+
+        {/* Formulario */}
+        <View style={styles.form}>
+          <View style={styles.cardCombined}>
+            <Text style={styles.sectionTitle}>Datos personales</Text>
+
+            <View style={styles.fieldRow}>
+              <View style={[styles.fieldContainer, styles.fieldHalf]}>
+                <Text style={styles.label}>Nombre *</Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    !isEditing && styles.inputDisabled,
+                  ]}
+                  value={userData.primerNombre}
+                  onChangeText={(text) =>
+                    setUserData((p) => ({ ...p, primerNombre: text }))
+                  }
+                  editable={isEditing}
+                  placeholder="Ingrese primer nombre"
+                  placeholderTextColor={theme.placeholder}
+                />
+              </View>
+
+              <View style={[styles.fieldContainer, styles.fieldHalf]}>
+                <Text style={styles.label}>Segundo Nombre</Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    !isEditing && styles.inputDisabled,
+                  ]}
+                  value={userData.segundoNombre}
+                  onChangeText={(text) =>
+                    setUserData((p) => ({ ...p, segundoNombre: text }))
+                  }
+                  editable={isEditing}
+                  placeholder="Ingrese segundo nombre"
+                  placeholderTextColor={theme.placeholder}
+                />
+              </View>
+            </View>
+
+            <View style={styles.fieldRow}>
+              <View style={[styles.fieldContainer, styles.fieldHalf]}>
+                <Text style={styles.label}>Primer Apellido *</Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    !isEditing && styles.inputDisabled,
+                  ]}
+                  value={userData.primerApellido}
+                  onChangeText={(text) =>
+                    setUserData((p) => ({ ...p, primerApellido: text }))
+                  }
+                  editable={isEditing}
+                  placeholder="Ingrese primer apellido"
+                  placeholderTextColor={theme.placeholder}
+                />
+              </View>
+
+              <View style={[styles.fieldContainer, styles.fieldHalf]}>
+                <Text style={styles.label}>Segundo Apellido</Text>
+                <TextInput
+                  style={[
+                    styles.input,
+                    !isEditing && styles.inputDisabled,
+                  ]}
+                  value={userData.segundoApellido}
+                  onChangeText={(text) =>
+                    setUserData((p) => ({ ...p, segundoApellido: text }))
+                  }
+                  editable={isEditing}
+                  placeholder="Ingrese segundo apellido"
+                  placeholderTextColor={theme.placeholder}
+                />
+              </View>
+            </View>
+
+            <View style={styles.sectionDivider} />
+
+            <Text style={styles.sectionTitle}>Datos de contacto</Text>
+
+            <View style={styles.fieldContainer}>
+              <Text style={styles.label}>Teléfono</Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  !isEditing && styles.inputDisabled,
+                ]}
+                value={userData.numTel}
+                onChangeText={(text) =>
+                  setUserData((p) => ({ ...p, numTel: text }))
+                }
+                editable={isEditing}
+                placeholder="663-123-4567"
+                keyboardType="phone-pad"
+                placeholderTextColor={theme.placeholder}
+              />
+            </View>
+
+            <View style={styles.fieldContainer}>
+              <Text style={styles.label}>Email</Text>
+              <TextInput
+                style={[styles.input, styles.inputDisabled]}
+                value={userData.email}
+                editable={false}
+                placeholderTextColor={theme.placeholder}
+              />
+            </View>
+
+            <View style={styles.sectionDivider} />
+
+            <Text style={styles.sectionTitle}>Información del sistema</Text>
+
+            <View style={styles.fieldRow}>
+              <View style={[styles.fieldContainer, styles.fieldHalf]}>
+                <Text style={styles.label}>Rol</Text>
+                <TextInput
+                  style={[styles.input, styles.inputDisabled]}
+                  value={userData.rol}
+                  editable={false}
+                  placeholderTextColor={theme.placeholder}
+                />
+              </View>
+
+              <View style={[styles.fieldContainer, styles.fieldHalf]}>
+                <Text style={styles.label}>Estado</Text>
+                <TextInput
+                  style={[styles.input, styles.inputDisabled]}
+                  value={userData.estado}
+                  editable={false}
+                  placeholderTextColor={theme.placeholder}
+                />
+              </View>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.form}>
+          <View style={[styles.cardCombined, styles.passwordCard]}>
+            <View style={styles.passwordHeaderRow}>
+              <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Seguridad</Text>
+              <TouchableOpacity
+                onPress={() => setShowChangePwd((v) => !v)}
+                style={styles.changePwdToggle}
+              >
+                <Text style={styles.changePwdToggleText}>
+                  {showChangePwd ? "Cerrar" : "Editar contraseña"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {showChangePwd && (
+              <View>
+                <View style={styles.fieldContainer}>
+                  <Text style={styles.label}>Contraseña actual</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={pwdCurrent}
+                    onChangeText={setPwdCurrent}
+                    secureTextEntry
+                    placeholder="Tu contraseña actual"
+                    placeholderTextColor={theme.placeholder}
+                  />
+                </View>
+
+                <View style={styles.fieldContainer}>
+                  <Text style={styles.label}>Nueva contraseña</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={pwdNew}
+                    onChangeText={setPwdNew}
+                    secureTextEntry
+                    placeholder="Mínimo 6 caracteres"
+                    placeholderTextColor={theme.placeholder}
+                  />
+                </View>
+
+                <View style={styles.fieldContainer}>
+                  <Text style={styles.label}>Repite nueva contraseña</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={pwdNew2}
+                    onChangeText={setPwdNew2}
+                    secureTextEntry
+                    placeholder="Confirma tu nueva contraseña"
+                    placeholderTextColor={theme.placeholder}
+                  />
+                </View>
+
+                <TouchableOpacity
+                  style={[styles.saveButton, changingPwd && styles.saveButtonDisabled]}
+                  disabled={changingPwd}
+                  onPress={async () => {
+                    if (!pwdCurrent || !pwdNew || !pwdNew2) {
+                      Toast.show({
+                        type: "appError",
+                        text1: "Completa los campos",
+                        text2: "Llena las 3 casillas.",
+                      });
+                      return;
+                    }
+                    if (pwdNew.length < 6) {
+                      Toast.show({
+                        type: "appError",
+                        text1: "Contraseña débil",
+                        text2: "Mínimo 6 caracteres.",
+                      });
+                      return;
+                    }
+                    if (pwdNew !== pwdNew2) {
+                      Toast.show({
+                        type: "appError",
+                        text1: "No coinciden",
+                        text2: "Repite la nueva contraseña correctamente.",
+                      });
+                      return;
+                    }
+
+                    setChangingPwd(true);
+                    try {
+                      const auth = getAuth();
+                      const user = auth.currentUser;
+                      if (!user || !profile?.email) {
+                        throw new Error("No authenticated user");
+                      }
+                      const cred = EmailAuthProvider.credential(profile.email, pwdCurrent);
+                      await reauthenticateWithCredential(user, cred);
+                      await updatePassword(user, pwdNew);
+                      Toast.show({
+                        type: "appSuccess",
+                        text1: "Contraseña actualizada",
+                        text2: "Tu contraseña fue cambiada.",
+                      });
+                      setPwdCurrent("");
+                      setPwdNew("");
+                      setPwdNew2("");
+                      setShowChangePwd(false);
+                    } catch (e) {
+                      Toast.show({
+                        type: "appError",
+                        text1: "Error",
+                        text2: "Verifica tu contraseña actual.",
+                      });
+                    } finally {
+                      setChangingPwd(false);
+                    }
+                  }}
+                >
+                  {changingPwd ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={styles.saveButtonText}>Guardar nueva contraseña</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* Botones */}
+        {isEditing && (
           <TouchableOpacity
-          onPress={() => {
-            if (isEditing && isDirty) {
-              setShowExitEdit(true);
-            } else {
-              setIsEditing(!isEditing);
-            }
-          }}
-          style={[styles.editButton, isEditing && styles.editButtonActive]}
+            style={[styles.saveButton, saving && styles.saveButtonDisabled]}
+            onPress={handleSave}
+            disabled={saving}
+          >
+            {saving ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.saveButtonText}>Guardar Cambios</Text>
+            )}
+          </TouchableOpacity>
+        )}
+
+        <TouchableOpacity
+          style={styles.logoutButton}
+          onPress={() => setShowLogout(true)}
         >
-          <Feather name={isEditing ? "x" : "edit-2"} size={18} color={theme.primary} />
+          <Ionicons name="log-out-outline" size={20} color="#fff" style={styles.logoutIcon} />
+          <Text style={styles.logoutButtonText}>Cerrar Sesión</Text>
         </TouchableOpacity>
 
-                <ConfirmSheet
-          visible={showExitEdit}
-          title="Cambios sin guardar"
-          message="Tienes cambios sin guardar."
-          cancelText="Descartar"
-          confirmText="Guardar"
-          destructive 
-          onCancel={() => {
-            if (initialUserData) setUserData({ ...initialUserData });
-            setIsEditing(false);
-            setShowExitEdit(false);
-          }}
+        <ConfirmSheet
+          visible={showLogout}
+          title="Cerrar sesión"
+          message="¿Seguro que quieres salir?"
+          cancelText="Cancelar"
+          confirmText="Sí, salir"
+          destructive
+          onCancel={() => setShowLogout(false)}
           onConfirm={() => {
-            setShowExitEdit(false);
-            handleSave();
+            setShowLogout(false);
+            logout();
           }}
           theme={theme}
         />
 
 
+      </LinearGradient>
 
-          <TouchableOpacity
-            style={[
-              styles.darkModeToggle,
-              userData.modoOscuro && styles.darkModeToggleActive,
-            ]}
-            onPress={handleToggleDarkMode}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityLabel={
-            userData.modoOscuro ? "Cambiar a modo claro" : "Cambiar a modo oscuro"
-          }
-
-          >
-            <Ionicons
-            name={userData.modoOscuro ? "sunny" : "moon"}
-            size={18}
-            color={theme.toggleIcon}
-          />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Foto de perfil */}
-      <View style={styles.photoSection}>
-        <View style={styles.photoCard}>
-          <View style={styles.photoWrapper}>
-            {userData.fotoPerfil ? (
-              <Image
-                source={{ uri: userData.fotoPerfil }}
-                style={styles.profilePhoto}
-              />
-            ) : (
-              <View style={[styles.profilePhoto, styles.photoPlaceholder]}>
-                <AntDesign name="user" size={60} color={theme.placeholder} />
-              </View>
-            )}
-
-            {uploadingImage && (
-              <View style={styles.uploadingOverlay}>
-                <ActivityIndicator size="large" color="#fff" />
-              </View>
-            )}
-          </View>
-
-          {isEditing && !uploadingImage && (
-            <TouchableOpacity
-              style={styles.changePhotoButton}
-              onPress={handleChangePhoto}
-            >
-              <Ionicons name="camera" size={20} color={theme.primary} />
-              <Text style={styles.changePhotoText}>Cambiar foto</Text>
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-
-      {/* Formulario */}
-      <View style={styles.form}>
-        <View style={styles.cardCombined}>
-          <Text style={styles.sectionTitle}>Datos personales</Text>
-
-          <View style={styles.fieldRow}>
-            <View style={[styles.fieldContainer, styles.fieldHalf]}>
-              <Text style={styles.label}>Nombre *</Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  !isEditing && styles.inputDisabled,
-                ]}
-                value={userData.primerNombre}
-                onChangeText={(text) =>
-                  setUserData((p) => ({ ...p, primerNombre: text }))
-                }
-                editable={isEditing}
-                placeholder="Ingrese primer nombre"
-                placeholderTextColor={theme.placeholder}
-              />
-            </View>
-
-            <View style={[styles.fieldContainer, styles.fieldHalf]}>
-              <Text style={styles.label}>Segundo Nombre</Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  !isEditing && styles.inputDisabled,
-                ]}
-                value={userData.segundoNombre}
-                onChangeText={(text) =>
-                  setUserData((p) => ({ ...p, segundoNombre: text }))
-                }
-                editable={isEditing}
-                placeholder="Ingrese segundo nombre"
-                placeholderTextColor={theme.placeholder}
-              />
-            </View>
-          </View>
-
-          <View style={styles.fieldRow}>
-            <View style={[styles.fieldContainer, styles.fieldHalf]}>
-              <Text style={styles.label}>Primer Apellido *</Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  !isEditing && styles.inputDisabled,
-                ]}
-                value={userData.primerApellido}
-                onChangeText={(text) =>
-                  setUserData((p) => ({ ...p, primerApellido: text }))
-                }
-                editable={isEditing}
-                placeholder="Ingrese primer apellido"
-                placeholderTextColor={theme.placeholder}
-              />
-            </View>
-
-            <View style={[styles.fieldContainer, styles.fieldHalf]}>
-              <Text style={styles.label}>Segundo Apellido</Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  !isEditing && styles.inputDisabled,
-                ]}
-                value={userData.segundoApellido}
-                onChangeText={(text) =>
-                  setUserData((p) => ({ ...p, segundoApellido: text }))
-                }
-                editable={isEditing}
-                placeholder="Ingrese segundo apellido"
-                placeholderTextColor={theme.placeholder}
-              />
-            </View>
-          </View>
-
-          <View style={styles.sectionDivider} />
-
-          <Text style={styles.sectionTitle}>Datos de contacto</Text>
-
-          <View style={styles.fieldContainer}>
-            <Text style={styles.label}>Teléfono</Text>
-            <TextInput
-              style={[
-                styles.input,
-                !isEditing && styles.inputDisabled,
-              ]}
-              value={userData.numTel}
-              onChangeText={(text) =>
-                setUserData((p) => ({ ...p, numTel: text }))
-              }
-              editable={isEditing}
-              placeholder="663-123-4567"
-              keyboardType="phone-pad"
-              placeholderTextColor={theme.placeholder}
-            />
-          </View>
-
-          <View style={styles.fieldContainer}>
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              style={[styles.input, styles.inputDisabled]}
-              value={userData.email}
-              editable={false}
-              placeholderTextColor={theme.placeholder}
-            />
-          </View>
-
-          <View style={styles.sectionDivider} />
-
-          <Text style={styles.sectionTitle}>Información del sistema</Text>
-
-          <View style={styles.fieldRow}>
-            <View style={[styles.fieldContainer, styles.fieldHalf]}>
-              <Text style={styles.label}>Rol</Text>
-              <TextInput
-                style={[styles.input, styles.inputDisabled]}
-                value={userData.rol}
-                editable={false}
-                placeholderTextColor={theme.placeholder}
-              />
-            </View>
-
-            <View style={[styles.fieldContainer, styles.fieldHalf]}>
-              <Text style={styles.label}>Estado</Text>
-              <TextInput
-                style={[styles.input, styles.inputDisabled]}
-                value={userData.estado}
-                editable={false}
-                placeholderTextColor={theme.placeholder}
-              />
-            </View>
-          </View>
-        </View>
-      </View>
-
-       <View style={styles.form}>
-        <View style={[styles.cardCombined, styles.passwordCard]}>
-          <View style={styles.passwordHeaderRow}>
-            <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Seguridad</Text>
-            <TouchableOpacity
-              onPress={() => setShowChangePwd((v) => !v)}
-              style={styles.changePwdToggle}
-            >
-              <Text style={styles.changePwdToggleText}>
-                {showChangePwd ? "Cerrar" : "Editar contraseña"}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {showChangePwd && (
-            <View>
-              <View style={styles.fieldContainer}>
-                <Text style={styles.label}>Contraseña actual</Text>
-                <TextInput
-                  style={styles.input}
-                  value={pwdCurrent}
-                  onChangeText={setPwdCurrent}
-                  secureTextEntry
-                  placeholder="Tu contraseña actual"
-                  placeholderTextColor={theme.placeholder}
-                />
-              </View>
-
-              <View style={styles.fieldContainer}>
-                <Text style={styles.label}>Nueva contraseña</Text>
-                <TextInput
-                  style={styles.input}
-                  value={pwdNew}
-                  onChangeText={setPwdNew}
-                  secureTextEntry
-                  placeholder="Mínimo 6 caracteres"
-                  placeholderTextColor={theme.placeholder}
-                />
-              </View>
-
-              <View style={styles.fieldContainer}>
-                <Text style={styles.label}>Repite nueva contraseña</Text>
-                <TextInput
-                  style={styles.input}
-                  value={pwdNew2}
-                  onChangeText={setPwdNew2}
-                  secureTextEntry
-                  placeholder="Confirma tu nueva contraseña"
-                  placeholderTextColor={theme.placeholder}
-                />
-              </View>
-
-              <TouchableOpacity
-                style={[styles.saveButton, changingPwd && styles.saveButtonDisabled]}
-                disabled={changingPwd}
-                onPress={async () => {
-                  if (!pwdCurrent || !pwdNew || !pwdNew2) {
-                    Toast.show({
-                      type: "appError",
-                      text1: "Completa los campos",
-                      text2: "Llena las 3 casillas.",
-                    });
-                    return;
-                  }
-                  if (pwdNew.length < 6) {
-                    Toast.show({
-                      type: "appError",
-                      text1: "Contraseña débil",
-                      text2: "Mínimo 6 caracteres.",
-                    });
-                    return;
-                  }
-                  if (pwdNew !== pwdNew2) {
-                    Toast.show({
-                      type: "appError",
-                      text1: "No coinciden",
-                      text2: "Repite la nueva contraseña correctamente.",
-                    });
-                    return;
-                  }
-
-                  setChangingPwd(true);
-                  try {
-                    const auth = getAuth();
-                    const user = auth.currentUser;
-                    if (!user || !profile?.email) {
-                      throw new Error("No authenticated user");
-                    }
-                    const cred = EmailAuthProvider.credential(profile.email, pwdCurrent);
-                    await reauthenticateWithCredential(user, cred);
-                    await updatePassword(user, pwdNew);
-                    Toast.show({
-                      type: "appSuccess",
-                      text1: "Contraseña actualizada",
-                      text2: "Tu contraseña fue cambiada.",
-                    });
-                    setPwdCurrent("");
-                    setPwdNew("");
-                    setPwdNew2("");
-                    setShowChangePwd(false);
-                  } catch (e) {
-                    Toast.show({
-                      type: "appError",
-                      text1: "Error",
-                      text2: "Verifica tu contraseña actual.",
-                    });
-                  } finally {
-                    setChangingPwd(false);
-                  }
-                }}
-              >
-                {changingPwd ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.saveButtonText}>Guardar nueva contraseña</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          )}
-        </View>
-      </View>
-
-      {/* Botones */}
-      {isEditing && (
-        <TouchableOpacity
-          style={[styles.saveButton, saving && styles.saveButtonDisabled]}
-          onPress={handleSave}
-          disabled={saving}
-        >
-          {saving ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.saveButtonText}>Guardar Cambios</Text>
-          )}
-        </TouchableOpacity>
-      )}
-
-      <TouchableOpacity
-        style={styles.logoutButton}
-        onPress={() => setShowLogout(true)}
-      >
-        <Ionicons name="log-out-outline" size={20} color="#fff" style={styles.logoutIcon} />
-        <Text style={styles.logoutButtonText}>Cerrar Sesión</Text>
-      </TouchableOpacity>
-
-      <ConfirmSheet
-        visible={showLogout}
-        title="Cerrar sesión"
-        message="¿Seguro que quieres salir?"
-        cancelText="Cancelar"
-        confirmText="Sí, salir"
-        destructive
-        onCancel={() => setShowLogout(false)}
-        onConfirm={() => {
-          setShowLogout(false);
-          logout();
-        }}
-        theme={theme}
-      />
-
-
-      <View style={{ marginBottom: -30 }} />
+      <View style={{ marginBottom: -50 }} />
     </ScrollView>
   );
 }
@@ -822,7 +845,6 @@ function createStyles(theme) {
   return StyleSheet.create({
     container: {
       flex: 1,
-      backgroundColor: theme.bg,
     },
     contentContainer: {
       paddingBottom: 48,
@@ -839,18 +861,18 @@ function createStyles(theme) {
       color: theme.textMuted,
     },
     header: {
-  flexDirection: "row",
-  justifyContent: "space-between",
-  alignItems: "center",
-  paddingHorizontal: 20,
-  paddingTop: 60,
-  paddingBottom: 28,
-  backgroundColor: theme.card,
-  borderBottomWidth: 1,
-  // Antes: condicional con rgba(...).
-  // Ahora: usa el tono sutil del tema para mantener coherencia neutra.
-  borderBottomColor: theme.borderSubtle,
-},
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingHorizontal: 20,
+      paddingTop: 60,
+      paddingBottom: 28,
+      backgroundColor: theme.card,
+      borderBottomWidth: 1,
+      // Antes: condicional con rgba(...).
+      // Ahora: usa el tono sutil del tema para mantener coherencia neutra.
+      borderBottomColor: theme.borderSubtle,
+    },
 
 
     headerActions: {
@@ -874,7 +896,7 @@ function createStyles(theme) {
       justifyContent: "center",
       marginRight: 12,
       marginTop: -10,
-      
+
     },
     editButtonActive: {
       backgroundColor: theme.chipActiveBg,
@@ -978,7 +1000,7 @@ function createStyles(theme) {
       color: theme.text,
       marginBottom: 14,
     },
-    
+
     sectionDivider: {
       height: 1,
       backgroundColor: theme.divider,
@@ -1076,7 +1098,7 @@ function createStyles(theme) {
       backgroundColor: theme.chipBg,
       borderWidth: 1,
       borderColor: theme.chipBorder,
-      
+
     },
     changePwdToggleText: {
       color: theme.primary,

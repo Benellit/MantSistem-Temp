@@ -4,9 +4,9 @@ import Feather from "@expo/vector-icons/Feather"
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6"
 import Ionicons from "@expo/vector-icons/Ionicons"
 import { LinearGradient } from "expo-linear-gradient"
-import { collection, collectionGroup, doc, getDoc, getDocs, getFirestore, orderBy, query, where,} from "firebase/firestore"
+import { collection, collectionGroup, doc, getDoc, getDocs, getFirestore, orderBy, query, where, } from "firebase/firestore"
 import { useEffect, useState } from "react"
-import { ActivityIndicator, Dimensions, Image, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View,} from "react-native"
+import { ActivityIndicator, Dimensions, Image, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, } from "react-native"
 import ModalFiltros from "../../components/ModalFiltros"
 import BotonRegistrar from "../../components/BotonRegistrar"
 import appFirebase from "../../credenciales/Credenciales"
@@ -86,31 +86,54 @@ export default function TareasShared({ navigation }) {
                 const response = await getDocs(baseQuery)
                 tareaList = response.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
             } else if (profile.rol === "Tecnico") {
-                const userRef = doc(db, "USUARIO", profile.id)
-                const q = query(collectionGroup(db, "Tecnicos"), where("IDUsuario", "==", userRef))
-                const response = await getDocs(q)
+                const userRef = doc(db, "USUARIO", profile.id);
+
+                // Buscar en todas las subcolecciones Técnicos
+                const q = query(
+                    collectionGroup(db, "Tecnicos"),
+                    where("IDUsuario", "==", userRef)
+                );
+
+                const response = await getDocs(q);
 
                 tareaList = await Promise.all(
                     response.docs.map(async (docSnap) => {
-                        const tecnicoData = docSnap.data()
-                        const tareaRef = docSnap.ref.parent.parent
-                        const tareaSnap = await getDoc(tareaRef)
-                        const tareaData = { id: tareaRef.id, ...tareaSnap.data(), tecnico: { id: docSnap.id, ...tecnicoData } }
 
-                        if (filtros.estado && tareaData.estado !== filtros.estado) return null
-                        if (filtros.prioridad && tareaData.prioridad !== filtros.prioridad) return null
+                        const tecnicoData = docSnap.data();
+                        const tareaRef = docSnap.ref.parent.parent;
+
+                        if (tareaRef.parent.id !== "TAREA") return null;
+
+                        const tareaSnap = await getDoc(tareaRef);
+
+                        if (!tareaSnap.exists()) return null;
+
+                        const tareaData = {
+                            id: tareaRef.id,
+                            ...tareaSnap.data(),
+                            tecnico: { id: docSnap.id, ...tecnicoData }
+                        };
+
+                        // ---- FILTROS EXISTENTES ----
+                        if (filtros.estado && tareaData.estado !== filtros.estado) return null;
+
+                        if (filtros.prioridad && tareaData.prioridad !== filtros.prioridad) return null;
+
                         if (filtros.sucursal) {
-                            const sucursalId = tareaData.IDSucursal.id || tareaData.IDSucursal
-                            if (sucursalId !== filtros.sucursal) return null
+                            const sucursalId = tareaData.IDSucursal.id || tareaData.IDSucursal;
+                            if (sucursalId !== filtros.sucursal) return null;
                         }
 
-                        if (busqueda && !tareaData.nombre.toLowerCase().includes(busqueda.toLowerCase())) return null
+                        if (busqueda && !tareaData.nombre.toLowerCase().includes(busqueda.toLowerCase())) {
+                            return null;
+                        }
 
-                        return tareaData
-                    }),
-                )
+                        return tareaData;
+                    })
+                );
 
-                tareaList = tareaList.filter((t) => t !== null)
+                // Eliminar nulls de filtros
+                tareaList = tareaList.filter((t) => t !== null);
             } else {
                 navigation.navigate("Tabs")
                 return
@@ -300,7 +323,7 @@ export default function TareasShared({ navigation }) {
 
     return (
         <LinearGradient
-            colors={["#87aef0", "#9c8fc4"]}
+            colors={profile.modoOscuro ? ['#1A1A2E', '#16213E'] : ['#667EEA', '#764BA2']}
             start={{ x: 0.5, y: 0.4 }}
             end={{ x: 0.5, y: 1 }}
             style={{ flex: 1 }}

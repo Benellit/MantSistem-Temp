@@ -130,7 +130,7 @@ export default function SucursalesAdmin({ navigation }) {
 
   return (
     <LinearGradient
-      colors={["#87aef0", "#9c8fc4"]}
+      colors={profile.modoOscuro ? ['#1A1A2E', '#16213E'] : ['#667EEA', '#764BA2']}
       start={{ x: 0.5, y: 0.4 }}
       end={{ x: 0.5, y: 1 }}
       style={{ flex: 1 }}
@@ -402,7 +402,7 @@ const styles = StyleSheet.create({
     elevation: 30,
   },
   cardOscuro: {
-    backgroundColor: "#2C2C2C",
+    backgroundColor: '#2C2C3E',
     borderRadius: 8,
     paddingHorizontal: 15,
     paddingVertical: 10,

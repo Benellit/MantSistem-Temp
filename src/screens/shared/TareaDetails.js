@@ -1,5 +1,3 @@
-"use client"
-
 import AntDesign from "@expo/vector-icons/AntDesign"
 import Feather from "@expo/vector-icons/Feather"
 import FontAwesome from "@expo/vector-icons/FontAwesome"
@@ -1040,6 +1038,15 @@ const TareaDetails = ({ route, navigation }) => {
         }, [])
     );
 
+    let creacionDespuesFecha = false; // valor por defecto
+
+    if (!tarea?.fechaCreacion) {
+        console.log("fechaCreacion no existe");
+    } else {
+        creacionDespuesFecha = new Date() <= tarea.fechaCreacion.toDate();
+        console.log(creacionDespuesFecha);
+    }
+
     if (loading) {
         return (
             <View style={profile.modoOscuro ? styles.loaderOscuro : styles.loaderClaro}>
@@ -1609,66 +1616,66 @@ const TareaDetails = ({ route, navigation }) => {
                                                 item.estado !== "Revisada" &&
                                                 profile.rol === "Tecnico" && (
                                                     <View style={{ gap: 8 }}>
-                                                        {item.estado !== "Completada" && item.estado !== "Revisada" && (
-                                                            <TouchableOpacity
-                                                                style={{
-                                                                    flexDirection: "row",
-                                                                    alignItems: "center",
-                                                                    justifyContent: "center",
-                                                                    gap: 8,
-                                                                    paddingVertical: 12,
-                                                                    paddingHorizontal: 16,
-                                                                    borderRadius: 12,
-                                                                    borderWidth: 2,
-                                                                    borderStyle: "dashed",
-                                                                    borderColor: profile.modoOscuro ? "#444" : "#D0D0D0",
-                                                                }}
-                                                                onPress={() => openSheet("subtarea", item.id)}
-                                                            >
-                                                                <AntDesign name="plus" size={20} color={profile.modoOscuro ? "#888" : "#666"} />
-                                                                <Text
-                                                                    style={{
-                                                                        color: profile.modoOscuro ? "#888" : "#666",
-                                                                        fontWeight: "600",
-                                                                        fontSize: 15,
-                                                                    }}
-                                                                >
-                                                                    Adjuntar Evidencia o Reporte
-                                                                </Text>
-                                                            </TouchableOpacity>
+                                                        {creacionDespuesFecha == false && (
+                                                            <View>
+                                                                {item.estado !== "Completada" && item.estado !== "Revisada" && (
+                                                                    <TouchableOpacity
+                                                                        style={{
+                                                                            flexDirection: "row",
+                                                                            alignItems: "center",
+                                                                            justifyContent: "center",
+                                                                            gap: 8,
+                                                                            paddingVertical: 12,
+                                                                            paddingHorizontal: 16,
+                                                                            borderRadius: 12,
+                                                                            borderWidth: 2,
+                                                                            borderStyle: "dashed",
+                                                                            borderColor: profile.modoOscuro ? "#444" : "#D0D0D0",
+                                                                            marginBottom: 10,
+                                                                        }}
+                                                                        onPress={() => openSheet("subtarea", item.id)}
+                                                                    >
+                                                                        <AntDesign name="plus" size={20} color={profile.modoOscuro ? "#888" : "#666"} />
+                                                                        <Text
+                                                                            style={{
+                                                                                color: profile.modoOscuro ? "#888" : "#666",
+                                                                                fontWeight: "600",
+                                                                                fontSize: 15,
+                                                                            }}
+                                                                        >
+                                                                            Adjuntar Evidencia o Reporte
+                                                                        </Text>
+                                                                    </TouchableOpacity>
+                                                                )}
+
+                                                                {mostrarBoton && (
+                                                                    <TouchableOpacity
+                                                                        style={[
+                                                                            {
+                                                                                paddingVertical: 14,
+                                                                                borderRadius: 12,
+                                                                                alignItems: "center",
+                                                                            },
+                                                                            item.estado === "Pendiente"
+                                                                                ? { backgroundColor: "#57A7FE" }
+                                                                                : item.estado === "En Proceso"
+                                                                                    ? { backgroundColor: "#47A997" }
+                                                                                    : { backgroundColor: "#999" },
+                                                                        ]}
+                                                                        onPress={() => updateEstadoSubtarea(true, item.id, item.estado)}
+                                                                    >
+                                                                        <Text style={{ color: "white", fontWeight: "700", fontSize: 15 }}>
+                                                                            {item.estado === "Pendiente"
+                                                                                ? "Marcar En Proceso"
+                                                                                : item.estado === "En Proceso"
+                                                                                    ? "Marcar Completada"
+                                                                                    : "Cancelar Entrega"}
+                                                                        </Text>
+                                                                    </TouchableOpacity>
+                                                                )}
+                                                            </View>
                                                         )}
 
-                                                        {mostrarBoton && (
-                                                            <TouchableOpacity
-                                                                style={[
-                                                                    {
-                                                                        paddingVertical: 14,
-                                                                        borderRadius: 12,
-                                                                        alignItems: "center",
-                                                                    },
-                                                                    item.estado === "Pendiente"
-                                                                        ? { backgroundColor: "#57A7FE" }
-                                                                        : item.estado === "En Proceso"
-                                                                            ? { backgroundColor: "#47A997" }
-                                                                            : { backgroundColor: "#999" },
-                                                                ]}
-                                                                onPress={() => updateEstadoSubtarea(true, item.id, item.estado)}
-                                                            >
-                                                                <Text
-                                                                    style={{
-                                                                        color: "white",
-                                                                        fontWeight: "700",
-                                                                        fontSize: 15,
-                                                                    }}
-                                                                >
-                                                                    {item.estado === "Pendiente"
-                                                                        ? "Marcar En Proceso"
-                                                                        : item.estado === "En Proceso"
-                                                                            ? "Marcar Completada"
-                                                                            : "Cancelar Entrega"}
-                                                                </Text>
-                                                            </TouchableOpacity>
-                                                        )}
                                                     </View>
                                                 )}
                                         </View>
@@ -1689,18 +1696,22 @@ const TareaDetails = ({ route, navigation }) => {
                         borderTopColor: profile.modoOscuro ? "#1A1A1A" : "#E5E5E5",
                     }}
                 >
-                    {tarea.estado === "Pendiente" && (
-                        <TouchableOpacity
-                            style={{
-                                backgroundColor: "#57A7FE",
-                                paddingVertical: 16,
-                                borderRadius: 12,
-                                alignItems: "center",
-                            }}
-                            onPress={() => updateEstado(true)}
-                        >
-                            <Text style={{ color: "white", fontWeight: "700", fontSize: 16 }}>Marcar En Proceso</Text>
-                        </TouchableOpacity>
+                    {creacionDespuesFecha == false && (
+                        <View>
+                            {tarea.estado === "Pendiente" && (
+                                <TouchableOpacity
+                                    style={{
+                                        backgroundColor: "#57A7FE",
+                                        paddingVertical: 16,
+                                        borderRadius: 12,
+                                        alignItems: "center",
+                                    }}
+                                    onPress={() => updateEstado(true)}
+                                >
+                                    <Text style={{ color: "white", fontWeight: "700", fontSize: 16 }}>Marcar En Proceso</Text>
+                                </TouchableOpacity>
+                            )}
+                        </View>
                     )}
                     {tarea.estado === "En Proceso" && (
                         <View style={{ gap: 10 }}>

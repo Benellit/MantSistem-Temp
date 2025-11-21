@@ -1,39 +1,39 @@
+import EvilIcons from '@expo/vector-icons/EvilIcons';
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { LinearGradient } from "expo-linear-gradient";
-import { collection, getDocs, getFirestore } from "firebase/firestore";
+import { collection, getDocs, getFirestore, orderBy, query } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Image, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import BotonRegistrar from '../../components/BotonRegistrar';
-import appFirebase from '../../credenciales/Credenciales';
-import EvilIcons from '@expo/vector-icons/EvilIcons';
-import { useAuth } from "../login/AuthContext";
 import ModalFiltrosUsuarios from '../../components/ModalFiltrosUsuarios';
+import appFirebase from '../../credenciales/Credenciales';
+import { useAuth } from "../login/AuthContext";
 
 const db = getFirestore(appFirebase);
 
 // Normaliza cualquier forma de sucursal a su ID de documento
 function extractSucursalId(val) {
-  if (!val) return null;
+    if (!val) return null;
 
-  // Firestore DocumentReference ({ id, path, ... })
-  if (typeof val === "object") {
-    if (val && typeof val.id === "string") return val.id;
-    if (val && typeof val.path === "string") {
-      const parts = val.path.split("/");
-      return parts[parts.length - 1] || null;
+    // Firestore DocumentReference ({ id, path, ... })
+    if (typeof val === "object") {
+        if (val && typeof val.id === "string") return val.id;
+        if (val && typeof val.path === "string") {
+            const parts = val.path.split("/");
+            return parts[parts.length - 1] || null;
+        }
+        return null;
     }
+
+    // String: puede venir como "SUCURSAL/123" o solo "123" o incluso ".../SUCURSAL/123"
+    if (typeof val === "string") {
+        const m = val.match(/\/?SUCURSAL\/([^/]+)$/i);
+        if (m) return m[1];
+        return val; // ya es el id
+    }
+
     return null;
-  }
-
-  // String: puede venir como "SUCURSAL/123" o solo "123" o incluso ".../SUCURSAL/123"
-  if (typeof val === "string") {
-    const m = val.match(/\/?SUCURSAL\/([^/]+)$/i);
-    if (m) return m[1];
-    return val; // ya es el id
-  }
-
-  return null;
 }
 
 
@@ -48,11 +48,17 @@ const UsuariosGestor = ({ navigation }) => {
     const obtenerUsuarios = async () => {
         try {
             const usuariosRef = collection(db, 'USUARIO');
-            const snapshot = await getDocs(usuariosRef);
+
+            // 🔽 Consulta ordenada por fechaRegistro de forma descendente
+            const q = query(usuariosRef, orderBy('fechaRegistro', 'desc'));
+
+            const snapshot = await getDocs(q);
+
             const usuariosData = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             }));
+
             setUsuarios(usuariosData);
         } catch (error) {
             console.error("Error al obtener usuarios:", error);
@@ -70,68 +76,72 @@ const UsuariosGestor = ({ navigation }) => {
         await obtenerUsuarios();
         setRefreshing(false);
     };
-    
-       // Modal de filtros (estado aplicado)
-        const [openFiltros, setOpenFiltros] = useState(false);
-        const [appliedFilters, setAppliedFilters] = useState({
+
+    // Modal de filtros (estado aplicado)
+    const [openFiltros, setOpenFiltros] = useState(false);
+    const [appliedFilters, setAppliedFilters] = useState({
         sucursal: null,
         estado: null,
         roles: [],
-        });
+    });
 
-const normalizeRole = (r = "") => r.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const normalizeRole = (r = "") => r.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
-const sucursalFiltroEfectivo =
-  (profile?.rol === 'Gestor' || profile?.rol === 'Tecnico')
-    ? extractSucursalId(profile?.IDSucursal)
-    : appliedFilters.sucursal;
+    const sucursalFiltroEfectivo =
+        (profile?.rol === 'Gestor' || profile?.rol === 'Tecnico')
+            ? extractSucursalId(profile?.IDSucursal)
+            : appliedFilters.sucursal;
 
-        const usuariosFiltrados = usuarios.filter(usuario => {
-    // 1) búsqueda texto (igual que ya tenías)
-    const nombreCompleto = `${usuario.primerNombre || ''} ${usuario.segundoNombre || ''} ${usuario.primerApellido || ''} ${usuario.segundoApellido || ''}`.toLowerCase();
-    const termino = busqueda.toLowerCase();
-    const pasaTexto =
-        nombreCompleto.includes(termino) ||
-        usuario.email?.toLowerCase().includes(termino) ||
-        usuario.rol?.toLowerCase().includes(termino);
+    const usuariosFiltrados = usuarios.filter(usuario => {
+        // 1) búsqueda texto (igual que ya tenías)
+        const nombreCompleto = `${usuario.primerNombre || ''} ${usuario.segundoNombre || ''} ${usuario.primerApellido || ''} ${usuario.segundoApellido || ''}`.toLowerCase();
+        const termino = busqueda.toLowerCase();
+        const pasaTexto =
+            nombreCompleto.includes(termino) ||
+            usuario.email?.toLowerCase().includes(termino) ||
+            usuario.rol?.toLowerCase().includes(termino);
 
-    if (!pasaTexto) return false;
+        if (!pasaTexto) return false;
 
-    // 2) filtros aplicados
-    const { estado, sucursal, roles } = appliedFilters;
+        // 2) filtros aplicados
+        const { estado, sucursal, roles } = appliedFilters;
 
-    // Estado (==)
-    if (estado && (usuario.estado || "").toLowerCase() !== estado.toLowerCase()) return false;
+        // Estado (==)
+        if (estado && (usuario.estado || "").toLowerCase() !== estado.toLowerCase()) return false;
 
-    // Sucursal (single)
-  
-    if (sucursalFiltroEfectivo) {
-    const idS = extractSucursalId(
-        usuario.sucursalNombre ?? usuario.sucursal ?? usuario.Sucursal ?? usuario.IDSucursal
-    );
-    if ((idS || "") !== String(sucursalFiltroEfectivo)) return false;
-    }
+        // Sucursal (single)
+
+        if (sucursalFiltroEfectivo) {
+            const idS = extractSucursalId(
+                usuario.sucursalNombre ?? usuario.sucursal ?? usuario.Sucursal ?? usuario.IDSucursal
+            );
+            if ((idS || "") !== String(sucursalFiltroEfectivo)) return false;
+        }
 
 
-    // Rol (multi)
-    if (roles?.length) {
-  const userRole = normalizeRole(usuario.rol || "");
-  const selected = roles.map(normalizeRole);
-  if (!selected.includes(userRole)) return false;
-}
+        // Rol (multi)
+        if (roles?.length) {
+            const userRole = normalizeRole(usuario.rol || "");
+            const selected = roles.map(normalizeRole);
+            if (!selected.includes(userRole)) return false;
+        }
 
-    return true;
+        return true;
     });
 
 
     // === Helpers visuales ===
     const getEstadoColor = (estado) => {
         if (!estado) return '#9E9E9E';
-        const s = estado.toLowerCase();
-        if (s.includes('activo')) return '#26D07C';     // verde presencia
-        if (s.includes('inac') || s.includes('suspend')) return '#F5615C'; // rojo
-        return '#9E9E9E'; // gris neutro
+
+        const s = estado.toLowerCase().trim();
+
+        if (s === 'activo') return '#26D07C';         // verde
+        if (s === 'inactivo' || s.includes('suspend')) return '#F5615C'; // rojo
+
+        return '#9E9E9E';
     };
+
 
     const ROLE_META = {
         Administrador: { bg: '#6C63FF', text: '#FFFFFF', icon: 'shield-outline' },
@@ -180,8 +190,8 @@ const sucursalFiltroEfectivo =
         })();
     }, []);
 
-        
-       
+
+
 
 
 
@@ -192,7 +202,7 @@ const sucursalFiltroEfectivo =
 
     return (
         <LinearGradient
-            colors={["#87aef0", "#9c8fc4"]}
+            colors={profile.modoOscuro ? ['#1A1A2E', '#16213E'] : ['#667EEA', '#764BA2']}
             start={{ x: 0.5, y: 0.4 }}
             end={{ x: 0.5, y: 1 }}
             style={{ flex: 1 }}
@@ -249,16 +259,16 @@ const sucursalFiltroEfectivo =
                                     opacity: refreshing ? 0.6 : 1,
                                 }}
                             >
-                                <FontAwesome6 name="magnifying-glass" size={16}  color={profile.modoOscuro === true ? "black" : "#FFFF"} />
+                                <FontAwesome6 name="magnifying-glass" size={16} color={profile.modoOscuro === true ? "black" : "#FFFF"} />
                             </TouchableOpacity>
                         </View>
 
                         <View style={{ marginTop: 5, justifyContent: 'center', alignContent: 'center' }}>
                             <TouchableOpacity
-                            style={styles.opciones}
-                           onPress={() => setOpenFiltros(true)}
+                                style={styles.opciones}
+                                onPress={() => setOpenFiltros(true)}
                             >
-                            <Ionicons name="options-outline" size={24}  color={profile.modoOscuro === true ? "black" : "#FFFF"} />
+                                <Ionicons name="options-outline" size={24} color={profile.modoOscuro === true ? "black" : "#FFFF"} />
                             </TouchableOpacity>
 
                         </View>
@@ -347,9 +357,19 @@ const sucursalFiltroEfectivo =
 
                                     {/* FILA INFERIOR: sucursal (izq) + chip con rango (der) */}
                                     <View style={styles.bottomRow}>
-                                        <View style={{ flex: 1 }}>
-                                            <Text style={profile.modoOscuro ? styles.footTextOscuro : styles.footTextClaro}>
-                                                Sucursal: {getSucursalLabel(usuario)}
+                                        <View style={[
+                                            styles.roleChip,
+                                            {
+                                                borderColor: profile.modoOscuro ? "rgba(255,255,255,0.14)" : "#D5DAE1",
+                                                backgroundColor: profile.modoOscuro ? "rgba(255,255,255,0.06)" : "#F8FAFD",
+                                            },
+                                        ]}>
+                                            <Ionicons name="business" size={12}
+                                                color={profile.modoOscuro ? "#D8DEE6" : "#334155"}
+                                                style={{ marginRight: 6 }}
+                                            />
+                                            <Text style={profile.modoOscuro ? styles.roleChipTextOsc : styles.roleChipTextClr}>
+                                                {getSucursalLabel(usuario)}
                                             </Text>
                                         </View>
 
@@ -382,13 +402,13 @@ const sucursalFiltroEfectivo =
                         )}
                     </ScrollView>
                 </View>
-                
+
                 <ModalFiltrosUsuarios
-            isOpen={openFiltros}
-            onClose={() => setOpenFiltros(false)}
-            applied={appliedFilters}
-            onApply={setAppliedFilters}
-            />
+                    isOpen={openFiltros}
+                    onClose={() => setOpenFiltros(false)}
+                    applied={appliedFilters}
+                    onApply={setAppliedFilters}
+                />
 
 
 
@@ -487,7 +507,7 @@ const styles = StyleSheet.create({
         shadowRadius: 6,
     },
     tarjetaOscuro: {
-        backgroundColor: '#2C2C2C',
+        backgroundColor: "#2C2C2C",
         borderRadius: 8,
         paddingHorizontal: 15,
         paddingVertical: 12,

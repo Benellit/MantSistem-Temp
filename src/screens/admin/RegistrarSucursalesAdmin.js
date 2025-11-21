@@ -19,6 +19,21 @@ const RegistrarSucursalesAdmin = ({ navigation }) => {
     const [dirColonia, setDirColonia] = useState("");
     const [dirCP, setDirCP] = useState("");
 
+    const isDarkMode = profile.modoOscuro === true;
+    const colors = {
+        headerText: isDarkMode ? '#FFFFFF' : '#FFFFFF',
+        headerIcon: isDarkMode ? '#FFFFFF' : '#FFFFFF',
+        containerBg: isDarkMode ? "#2C2C2C" : '#FFFFFF',
+        formBg: isDarkMode ? "#2C2C2C" : '#FFFFFF',
+        titleText: isDarkMode ? '#FFFFFF' : '#000000',
+        labelText: isDarkMode ? '#E0E0E0' : '#333333',
+        inputBg: isDarkMode ? '#2A2A2A' : '#f8f9fa',
+        inputBorder: isDarkMode ? '#404040' : '#e0e0e0',
+        inputText: isDarkMode ? '#FFFFFF' : '#333333',
+        inputIcon: isDarkMode ? '#B0B0B0' : '#666666',
+        placeholder: isDarkMode ? '#888888' : '#999999',
+    };
+
     // Validar formulario
     const validarFormulario = () => {
         if (!nombre.trim()) {
@@ -110,23 +125,23 @@ const RegistrarSucursalesAdmin = ({ navigation }) => {
     return (
         <View style={{ flex: 1 }}>
             <LinearGradient
-                colors={["#87aef0", "#9c8fc4"]}
+                colors={isDarkMode ? ['#1A1A2E', '#16213E'] : ['#667EEA', '#764BA2']}
                 start={{ x: 0.5, y: 0.4 }}
                 end={{ x: 0.5, y: 1 }}
                 style={{
-                    height: 155,
+                    height: 165,
                 }}
             >
                 <View style={{ paddingTop: 40, paddingLeft: 10 }}>
                     <View style={{ flexDirection: "row", alignItems: "center" }}>
                         <TouchableOpacity onPress={() => navigation.goBack()} style={{ padding: 4 }}>
-                            <Ionicons name="chevron-back" size={24} color={profile.modoOscuro === true ? "black" : "#FFFF"} />
+                            <Ionicons name="chevron-back" size={24} color={colors.headerIcon} />
                         </TouchableOpacity>
                     </View>
 
                     <Text
                         style={{
-                            color: profile.modoOscuro ? "#2C2C2C" : "white",
+                            color: colors.headerText,
                             fontSize: 26,
                             fontWeight: "900",
                             marginTop: 5,
@@ -139,30 +154,34 @@ const RegistrarSucursalesAdmin = ({ navigation }) => {
             </LinearGradient>
 
             <KeyboardAvoidingView
-                style={profile.modoOscuro === true ? styles.containerOscuro : styles.containerClaro}
+                style={[styles.container, { backgroundColor: colors.containerBg }]}
                 behavior={Platform.OS === "ios" ? "padding" : "height"}
             >
                 <ScrollView
-                    style={styles.container}
+                    style={styles.scrollView}
                     keyboardShouldPersistTaps="handled"
                 >
-                    <View style={styles.formContainer}>
-                        <Text style={[styles.titulo, { paddingTop: 10 }, { color: profile.modoOscuro === true ? "white" : 'black' }]}>Datos de registro                    </Text>
+                    <View style={[styles.formContainer, { backgroundColor: colors.formBg }]}>
+                        <Text style={[styles.titulo, { paddingTop: 10, color: colors.titleText }]}>
+                            Datos de registro
+                        </Text>
+
                         {/* Icono principal */}
                         <View style={styles.iconHeader}>
-                            <View style={styles.iconCircle}>
+                            <View style={[styles.iconCircle, { backgroundColor: isDarkMode ? '#2A4A6A' : '#f0f5ff' }]}>
                                 <Ionicons name="business" size={50} color="#87aef0" />
                             </View>
                         </View>
 
                         {/* Campo: Nombre */}
                         <View style={styles.inputContainer}>
-                            <Text style={styles.label}>Nombre de la Sucursal *</Text>
-                            <View style={styles.inputWrapper}>
-                                <Ionicons name="storefront-outline" size={20} color="#666" style={styles.inputIcon} />
+                            <Text style={[styles.label, { color: colors.labelText }]}>Nombre de la Sucursal *</Text>
+                            <View style={[styles.inputWrapper, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder }]}>
+                                <Ionicons name="storefront-outline" size={20} color={colors.inputIcon} style={styles.inputIcon} />
                                 <TextInput
-                                    style={styles.input}
+                                    style={[styles.input, { color: colors.inputText }]}
                                     placeholder="Ej: Sucursal Centro"
+                                    placeholderTextColor={colors.placeholder}
                                     value={nombre}
                                     onChangeText={setNombre}
                                     maxLength={100}
@@ -172,12 +191,13 @@ const RegistrarSucursalesAdmin = ({ navigation }) => {
 
                         {/* Campo: Calle */}
                         <View style={styles.inputContainer}>
-                            <Text style={styles.label}>Calle *</Text>
-                            <View style={styles.inputWrapper}>
-                                <Ionicons name="location-outline" size={20} color="#666" style={styles.inputIcon} />
+                            <Text style={[styles.label, { color: colors.labelText }]}>Calle *</Text>
+                            <View style={[styles.inputWrapper, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder }]}>
+                                <Ionicons name="location-outline" size={20} color={colors.inputIcon} style={styles.inputIcon} />
                                 <TextInput
-                                    style={styles.input}
+                                    style={[styles.input, { color: colors.inputText }]}
                                     placeholder="Ej: Av. Revolución 1234"
+                                    placeholderTextColor={colors.placeholder}
                                     value={dirCalle}
                                     onChangeText={setDirCalle}
                                     maxLength={150}
@@ -187,12 +207,13 @@ const RegistrarSucursalesAdmin = ({ navigation }) => {
 
                         {/* Campo: Colonia */}
                         <View style={styles.inputContainer}>
-                            <Text style={styles.label}>Colonia *</Text>
-                            <View style={styles.inputWrapper}>
-                                <Ionicons name="home-outline" size={20} color="#666" style={styles.inputIcon} />
+                            <Text style={[styles.label, { color: colors.labelText }]}>Colonia *</Text>
+                            <View style={[styles.inputWrapper, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder }]}>
+                                <Ionicons name="home-outline" size={20} color={colors.inputIcon} style={styles.inputIcon} />
                                 <TextInput
-                                    style={styles.input}
+                                    style={[styles.input, { color: colors.inputText }]}
                                     placeholder="Ej: Zona Centro"
+                                    placeholderTextColor={colors.placeholder}
                                     value={dirColonia}
                                     onChangeText={setDirColonia}
                                     maxLength={100}
@@ -202,12 +223,13 @@ const RegistrarSucursalesAdmin = ({ navigation }) => {
 
                         {/* Campo: Código Postal */}
                         <View style={styles.inputContainer}>
-                            <Text style={styles.label}>Código Postal *</Text>
-                            <View style={styles.inputWrapper}>
-                                <Ionicons name="mail-outline" size={20} color="#666" style={styles.inputIcon} />
+                            <Text style={[styles.label, { color: colors.labelText }]}>Código Postal *</Text>
+                            <View style={[styles.inputWrapper, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder }]}>
+                                <Ionicons name="mail-outline" size={20} color={colors.inputIcon} style={styles.inputIcon} />
                                 <TextInput
-                                    style={styles.input}
+                                    style={[styles.input, { color: colors.inputText }]}
                                     placeholder="Ej: 22000"
+                                    placeholderTextColor={colors.placeholder}
                                     value={dirCP}
                                     onChangeText={setDirCP}
                                     keyboardType="numeric"
@@ -236,78 +258,23 @@ const RegistrarSucursalesAdmin = ({ navigation }) => {
 }
 
 const styles = StyleSheet.create({
-    containerClaro: {
+    container: {
         flex: 1,
-        backgroundColor: "#FFFFFF",
         borderTopRightRadius: 35,
         borderTopLeftRadius: 35,
-        marginTop: -30,
+        marginTop: -35,
         paddingBottom: 0,
         marginBottom: 0,
     },
-    containerOscuro: {
+    scrollView: {
         flex: 1,
-        backgroundColor: "#2C2C2C",
-        borderTopRightRadius: 35,
-        borderTopLeftRadius: 35,
-        marginTop: -30,
-        paddingBottom: 0,
-        marginBottom: 0,
     },
     titulo: {
         fontSize: 18,
-        fontWeight: 700,
+        fontWeight: '700',
         marginBottom: 10,
     },
-    container: {
-        flex: 1,
-    },
-    headerClaro: {
-        paddingTop: 15,
-        paddingHorizontal: 15,
-        paddingBottom: 15,
-        backgroundColor: "white",
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 5,
-        elevation: 6,
-        borderBottomWidth: 2,
-    },
-    headerOscuro: {
-        paddingTop: 15,
-        paddingHorizontal: 15,
-        paddingBottom: 15,
-        backgroundColor: "#2C2C2C",
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 5,
-        elevation: 6,
-        borderBottomWidth: 2,
-        borderColor: "#D9D9D9"
-    },
-    headerContent: {
-        flexDirection: "row",
-        alignItems: "center",
-        marginTop: 10,
-    },
-    backButton: {
-        marginRight: 15,
-        padding: 5,
-    },
-    tituloClaro: {
-        color: "black",
-        fontSize: 24,
-        fontWeight: "900",
-    },
-    tituloOscuro: {
-        color: "white",
-        fontSize: 24,
-        fontWeight: "900",
-    },
     formContainer: {
-        backgroundColor: "white",
         borderRadius: 20,
         paddingHorizontal: 15,
         shadowColor: "#000",
@@ -315,6 +282,7 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.1,
         shadowRadius: 8,
         paddingTop: 10,
+        paddingBottom: 20,
     },
     iconHeader: {
         alignItems: "center",
@@ -324,15 +292,9 @@ const styles = StyleSheet.create({
         width: 100,
         height: 100,
         borderRadius: 50,
-        backgroundColor: "#f0f5ff",
         justifyContent: "center",
         alignItems: "center",
         marginBottom: 5,
-    },
-    subtitulo: {
-        fontSize: 16,
-        color: "#666",
-        textAlign: "center",
     },
     inputContainer: {
         marginBottom: 20,
@@ -340,16 +302,13 @@ const styles = StyleSheet.create({
     label: {
         fontSize: 14,
         fontWeight: "600",
-        color: "#333",
         marginBottom: 8,
     },
     inputWrapper: {
         flexDirection: "row",
         alignItems: "center",
-        backgroundColor: "#f8f9fa",
         borderRadius: 12,
         borderWidth: 1,
-        borderColor: "#e0e0e0",
     },
     inputIcon: {
         marginLeft: 15,
@@ -359,11 +318,10 @@ const styles = StyleSheet.create({
         paddingVertical: 15,
         paddingHorizontal: 15,
         fontSize: 16,
-        color: "#333",
     },
     button: {
         flexDirection: "row",
-        backgroundColor: "#87aef0",
+        backgroundColor: "#3D67CD",
         paddingVertical: 16,
         borderRadius: 12,
         alignItems: "center",
@@ -383,20 +341,6 @@ const styles = StyleSheet.create({
         color: "white",
         fontSize: 18,
         fontWeight: "700",
-    },
-    buttonSecondary: {
-        paddingVertical: 16,
-        borderRadius: 12,
-        alignItems: "center",
-        justifyContent: "center",
-        marginTop: 10,
-        borderWidth: 2,
-        borderColor: "#87aef0",
-    },
-    buttonSecondaryText: {
-        color: "#87aef0",
-        fontSize: 16,
-        fontWeight: "600",
     },
 });
 

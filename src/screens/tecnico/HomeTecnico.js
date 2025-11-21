@@ -10,6 +10,7 @@ import { useEffect, useState } from "react"
 import {
   ActivityIndicator,
   Dimensions,
+  Platform,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -234,7 +235,7 @@ export default function DashboardTecnico({ navigation }) {
   if (loading) {
     return (
       <LinearGradient
-        colors={["#87aef0", "#9c8fc4"]}
+        colors={profile.modoOscuro ? ["#1A1A2E", "#16213E"] : ["#667EEA", "#764BA2"]}
         start={{ x: 0.5, y: 0.4 }}
         end={{ x: 0.5, y: 1 }}
         style={{ flex: 1 }}
@@ -249,14 +250,25 @@ export default function DashboardTecnico({ navigation }) {
 
   return (
     <LinearGradient
-      colors={["#87aef0", "#9c8fc4"]}
+      colors={profile.modoOscuro ? ["#1A1A2E", "#16213E"] : ["#667EEA", "#764BA2"]}
       start={{ x: 0.5, y: 0.4 }}
       end={{ x: 0.5, y: 1 }}
       style={{ flex: 1 }}
     >
       <View style={{ flex: 1 }}>
-        <View style={profile.modoOscuro ? styles.headerOscuro : styles.headerClaro}>
-          <Text style={profile.modoOscuro ? styles.saludoOscuro : styles.saludoClaro}>Dashboard</Text>
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.saludoOscuro}>Panel de Control</Text>
+            <Text style={styles.headerSubtitle}>
+              Bienvenido {profile.primerNombre} {profile.primerApellido}
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={[styles.refreshButton, profile.modoOscuro && styles.refreshButtonDark]}
+            onPress={onRefresh}
+          >
+            <Ionicons name="refresh" size={22} color={profile.modoOscuro ? "#FFF" : "#667EEA"} />
+          </TouchableOpacity>
         </View>
 
         <ScrollView
@@ -265,7 +277,7 @@ export default function DashboardTecnico({ navigation }) {
         >
           {/* Resumen de tareas */}
           <View style={styles.section}>
-            <Text style={profile.modoOscuro ? styles.tituloSeccionOscuro : styles.tituloSeccionClaro}>
+            <Text style={styles.tituloSeccionOscuro}>
               Resumen de tus tareas
             </Text>
             <View style={styles.tarjetasGrid}>
@@ -323,7 +335,7 @@ export default function DashboardTecnico({ navigation }) {
 
           {/* Progreso de cumplimiento */}
           <View style={styles.section}>
-            <Text style={profile.modoOscuro ? styles.tituloSeccionOscuro : styles.tituloSeccionClaro}>
+            <Text style={styles.tituloSeccionOscuro}>
               Progreso de cumplimiento
             </Text>
             <View style={[styles.tarjetaProgreso, profile.modoOscuro && styles.tarjetaProgresoOscuro]}>
@@ -334,16 +346,7 @@ export default function DashboardTecnico({ navigation }) {
                 de tus tareas completadas
               </Text>
               <View style={styles.barraProgresoContainer}>
-                <View
-                  style={[
-                    styles.barraProgreso,
-                    {
-                      width: `${calcularProgreso()}%`,
-                      backgroundColor:
-                        calcularProgreso() >= 75 ? "#47A997" : calcularProgreso() >= 50 ? "#57A7FE" : "#F4C54C",
-                    },
-                  ]}
-                />
+                <View style={[styles.barraProgreso, { width: `${calcularProgreso()}%` }]} />
               </View>
             </View>
           </View>
@@ -351,8 +354,10 @@ export default function DashboardTecnico({ navigation }) {
           {/* Tareas atrasadas */}
           {dashboardData.tareasAtrasadas.length > 0 && (
             <View style={styles.section}>
-              <View style={styles.alertBanner}>
-                <Ionicons name="warning" size={24} color="#F5615C" />
+              <View style={[profile.modoOscuro ? styles.alertBannerOscuro : styles.alertBanner]}>
+                <View style={[styles.metricIcon, { backgroundColor: '#eb675820' }]}>
+                  <Ionicons name="warning" size={24} color="#F5615C" />
+                </View>
                 <Text style={styles.alertText}>
                   Tienes {dashboardData.tareasAtrasadas.length} tarea
                   {dashboardData.tareasAtrasadas.length > 1 ? "s" : ""} atrasada
@@ -394,7 +399,7 @@ export default function DashboardTecnico({ navigation }) {
           {/* Próximas entregas */}
           {dashboardData.tareasProximas.length > 0 && (
             <View style={styles.section}>
-              <Text style={profile.modoOscuro ? styles.tituloSeccionOscuro : styles.tituloSeccionClaro}>
+              <Text style={styles.tituloSeccionOscuro}>
                 Próximas entregas
               </Text>
               {dashboardData.tareasProximas.map((tarea) => (
@@ -438,7 +443,7 @@ export default function DashboardTecnico({ navigation }) {
 
           {/* Indicadores personales */}
           <View style={styles.section}>
-            <Text style={profile.modoOscuro ? styles.tituloSeccionOscuro : styles.tituloSeccionClaro}>
+            <Text style={styles.tituloSeccionOscuro}>
               Tus indicadores
             </Text>
             <View style={styles.kpisGrid}>
@@ -471,7 +476,7 @@ export default function DashboardTecnico({ navigation }) {
           {/* Actividad reciente */}
           {dashboardData.actividadReciente.length > 0 && (
             <View style={styles.section}>
-              <Text style={profile.modoOscuro ? styles.tituloSeccionOscuro : styles.tituloSeccionClaro}>
+              <Text style={styles.tituloSeccionOscuro}>
                 Actividad reciente
               </Text>
               {dashboardData.actividadReciente.map((tarea) => (
@@ -525,27 +530,41 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#fff",
   },
-  headerClaro: {
-    paddingTop: 15,
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 20,
+    paddingTop: Platform.OS === "ios" ? 60 : 40,
     paddingBottom: 20,
-    backgroundColor: "white",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 16,
   },
-  headerOscuro: {
-    paddingTop: 15,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-    backgroundColor: "#1A1A1A",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 16,
+  headerSubtitle: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#FFFFFFCC",
+    marginTop: 4,
+  },
+  refreshButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#FFF",
+    justifyContent: "center",
+    alignItems: "center",
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  refreshButtonDark: {
+    backgroundColor: "#2C2C3E",
   },
   saludoClaro: {
     color: "black",
@@ -595,14 +614,15 @@ const styles = StyleSheet.create({
   tarjetasGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 12,
+    gap: 8,
     justifyContent: "space-between",
   },
   tarjetaResumen: {
     backgroundColor: "white",
     borderRadius: 14,
-    padding: 18,
-    width: "31%",
+    padding: 12,
+    width: "30.5%",
+    minWidth: 95,
     alignItems: "center",
     elevation: 3,
     shadowColor: "#000",
@@ -614,20 +634,21 @@ const styles = StyleSheet.create({
     backgroundColor: "#2C2C2C",
   },
   numeroTarjeta: {
-    fontSize: 36,
+    fontSize: 28,
     fontWeight: "800",
     color: "#1a1a1a",
-    marginTop: 10,
+    marginTop: 6,
+    marginBottom: 2,
   },
   numeroTarjetaOscuro: {
     color: "#ffffff",
   },
   labelTarjeta: {
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: "600",
-    color: "#999",
-    marginTop: 6,
+    color: "#666",
     textAlign: "center",
+    marginTop: 2,
   },
   labelTarjetaOscuro: {
     color: "#B0B0B0",
@@ -674,9 +695,21 @@ const styles = StyleSheet.create({
   barraProgreso: {
     height: "100%",
     borderRadius: 5,
+    backgroundColor: "#47A997",
   },
   alertBanner: {
     backgroundColor: "#FFF3F3",
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: "#F5615C",
+  },
+  alertBannerOscuro: {
+    backgroundColor: "#2C2C2C",
     borderRadius: 12,
     padding: 16,
     flexDirection: "row",
@@ -691,6 +724,13 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#F5615C",
     flex: 1,
+  },
+  metricIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   tarjetaTarea: {
     backgroundColor: "white",

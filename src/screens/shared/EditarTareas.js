@@ -18,6 +18,7 @@ import {
     setDoc,
     updateDoc,
     where,
+    Timestamp,
 } from "firebase/firestore"
 import { useEffect, useState } from "react"
 import {
@@ -104,6 +105,38 @@ const EditarTarea = ({ route, navigation }) => {
         return tipoParam
     }
 
+    const formatearFecha = (fecha) => {
+        let date
+
+        // Timestamp de Firestore
+        if (fecha && typeof fecha.toDate === "function") {
+            date = fecha.toDate()
+        }
+        // ISO 8601 (string)
+        else if (typeof fecha === "string") {
+            date = new Date(fecha)
+        }
+        // timestamp en milisegundos
+        else if (typeof fecha === "number") {
+            date = new Date(fecha)
+        } else if (fecha instanceof Date) {
+            date = fecha
+        } else {
+            return ""
+        }
+
+        const mesesCortos = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"]
+
+        const dia = date.getDate().toString().padStart(2, "0")
+        const mes = mesesCortos[date.getMonth()]
+        const año = date.getFullYear()
+
+        const horas = date.getHours().toString().padStart(2, "0")
+        const minutos = date.getMinutes().toString().padStart(2, "0")
+
+        return `${dia} ${mes} ${año}, ${horas}:${minutos}`
+    }
+
     const getTarea = async (id, esPlantilla) => {
         try {
             setCargando(true)
@@ -158,7 +191,10 @@ const EditarTarea = ({ route, navigation }) => {
 
                 if ((tipoTareaReal === "simple" || tipoTareaReal === "jerarquia") && !esPlantilla) {
                     if (tareaData.fechaEntrega) {
-                        setSelectedDate(new Date(tareaData.fechaEntrega))
+                        const fechaDate = tareaData.fechaEntrega?.toDate
+                            ? tareaData.fechaEntrega.toDate()
+                            : new Date(tareaData.fechaEntrega)
+                        setSelectedDate(fechaDate)
                     }
                 }
 
@@ -583,7 +619,7 @@ const EditarTarea = ({ route, navigation }) => {
 
         const tecnicoSeleccionado = tecnicos.find((t) => t.value === valueTecnicos)
         if (!tecnicoSeleccionado) {
-            Alert.alert("Error", "El técnico seleccionado no existe o no pertenece a la sucursal")
+            Alert.Alert("Error", "El técnico seleccionado no existe o no pertenece a la sucursal")
             return
         }
 
@@ -677,7 +713,7 @@ const EditarTarea = ({ route, navigation }) => {
                 !arrayValueTecnicos ||
                 arrayValueTecnicos.length === 0
             ) {
-                Alert.Alert("Faltan campos", "Revisa los datos básicos de la tarea")
+                Alert.alert("Faltan campos", "Revisa los datos básicos de la tarea")
                 setLoading(false)
                 return
             }
@@ -781,7 +817,7 @@ const EditarTarea = ({ route, navigation }) => {
             }
 
             if ((tipoTarea === "simple" || tipoTarea === "jerarquia") && !tareaRepetitiva) {
-                updateData.fechaEntrega = selectedDate.toISOString()
+                updateData.fechaEntrega = Timestamp.fromDate(selectedDate)
             }
 
             if (tareaRepetitiva && (tipoTarea === "repetitiva" || tipoTarea === "repje")) {
@@ -808,7 +844,7 @@ const EditarTarea = ({ route, navigation }) => {
                 const tecnicoRef = doc(tecnicosRef)
                 await setDoc(tecnicoRef, {
                     IDUsuario: doc(db, "USUARIO", tecnico.value),
-                    fechaAsignacion: new Date(),
+                    fechaAsignacion: Timestamp.now(),
                 })
             }
             console.log(`[v0] ${arrayValueTecnicos.length} técnicos asignados`)
@@ -884,6 +920,69 @@ const EditarTarea = ({ route, navigation }) => {
         }
     }
 
+    const formatFechaEntrega = (fechaEntrega) => {
+        let date
+
+        // Timestamp de Firestore
+        if (fechaEntrega && typeof fechaEntrega.toDate === "function") {
+            date = fechaEntrega.toDate()
+        }
+        // ISO 8601 (string)
+        else if (typeof fechaEntrega === "string") {
+            date = new Date(fechaEntrega)
+        }
+        // timestamp en milisegundos
+        else if (typeof fechaEntrega === "number") {
+            date = new Date(fechaEntrega)
+        } else if (fechaEntrega instanceof Date) {
+            date = fechaEntrega
+        } else {
+            return ""
+        }
+
+        const mesesCortos = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"]
+
+        const dia = date.getDate().toString().padStart(2, "0")
+        const mes = mesesCortos[date.getMonth()]
+        const año = date.getFullYear()
+
+        const horas = date.getHours().toString().padStart(2, "0")
+        const minutos = date.getMinutes().toString().padStart(2, "0")
+
+        return `${dia} ${mes} ${año}, ${horas}:${minutos}`
+    }
+
+    const handleDateConfirm = (date) => {
+        setSelectedDate(date)
+        setIsVisible(false)
+    }
+
+    const renderHistorialItem = ({ item }) => {
+        return (
+            <View style={styles.historialCard}>
+                <View style={styles.historialRow}>
+                    <Text style={styles.historialLabel}>Creada:</Text>
+                    <Text style={styles.historialValue}>{formatearFecha(item.fechaCreacion)}</Text>
+                </View>
+                <View style={styles.historialRow}>
+                    <Text style={styles.historialLabel}>Entrega:</Text>
+                    <Text style={styles.historialValue}>{formatearFecha(item.fechaEntrega)}</Text>
+                </View>
+                <TouchableOpacity
+                    style={styles.historialButton}
+                    onPress={() => {
+                        navigation.navigate("DetalleTarea", {
+                            id: item.id,
+                            tipoTarea: tipoTarea === "repetitiva" ? "simple" : tipoTarea === "repje" ? "jerarquia" : tipoTarea,
+                        })
+                    }}
+                >
+                    <Text style={styles.historialButtonText}>Ver detalles</Text>
+                </TouchableOpacity>
+            </View>
+        )
+    }
+
     if (cargando) {
         return (
             <View style={{ flex: 1 }}>
@@ -900,26 +999,13 @@ const EditarTarea = ({ route, navigation }) => {
         )
     }
 
-    const formatearFecha = (fecha) => {
-        if (!fecha) return "No disponible"
-        const date = fecha.toDate ? fecha.toDate() : new Date(fecha)
-        return date.toLocaleString("es-ES", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-            hour12: false,
-        })
-    }
-
     return (
         <View style={{ flex: 1 }}>
             <LinearGradient
-                colors={["#87aef0", "#9c8fc4"]}
+                colors={profile.modoOscuro ? ["#1A1A2E", "#16213E"] : ["#667EEA", "#764BA2"]}
                 start={{ x: 0.5, y: 0.4 }}
                 end={{ x: 0.5, y: 1 }}
-                style={{ height: 155 }}
+                style={{ height: 165 }}
             >
                 <View style={{ paddingTop: 40, paddingLeft: 10 }}>
                     <View style={{ flexDirection: "row", alignItems: "center" }}>
@@ -1145,7 +1231,7 @@ const EditarTarea = ({ route, navigation }) => {
                                                 <Text
                                                     style={{
                                                         fontSize: 14,
-                                                        color: profile.modoOscuro ? "#FFFFFF" : "#000000",
+                                                        color: profile.modoOscuro ? "#e02626ff" : "#e82c2cff",
                                                         flex: 1,
                                                         textAlign: "right",
                                                     }}
@@ -1286,7 +1372,7 @@ const EditarTarea = ({ route, navigation }) => {
                                     <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
                                         <View>
                                             <Text style={{ fontSize: 16, color: profile.modoOscuro ? "#FFFFFF" : "#000000" }}>
-                                                {selectedDate ? selectedDate.toLocaleString() : "Selecciona fecha y hora"}
+                                                {selectedDate ? formatearFecha(selectedDate) : "Selecciona fecha y hora"}
                                             </Text>
                                         </View>
                                         <View style={{ marginRight: 10 }}>
@@ -1298,7 +1384,7 @@ const EditarTarea = ({ route, navigation }) => {
                                 <DateTimePickerModal
                                     isVisible={isVisible}
                                     mode={mode}
-                                    onConfirm={handleConfirm}
+                                    onConfirm={handleDateConfirm}
                                     onCancel={() => setIsVisible(false)}
                                     minimumDate={new Date()}
                                 />
@@ -1838,7 +1924,7 @@ const styles = StyleSheet.create({
         backgroundColor: "#FFFFFF",
         borderTopRightRadius: 35,
         borderTopLeftRadius: 35,
-        marginTop: -30,
+        marginTop: -35,
         paddingBottom: 0,
         marginBottom: 0,
     },
@@ -1847,7 +1933,7 @@ const styles = StyleSheet.create({
         backgroundColor: "#2C2C2C",
         borderTopRightRadius: 35,
         borderTopLeftRadius: 35,
-        marginTop: -30,
+        marginTop: -35,
         paddingBottom: 0,
         marginBottom: 0,
     },
@@ -2118,6 +2204,50 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         alignItems: "center",
         borderRadius: 8,
+    },
+    // Estilos adicionales para el historial de tareas
+    historialCard: {
+        backgroundColor: "#f0f0f0",
+        borderRadius: 10,
+        padding: 15,
+        marginBottom: 10,
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    historialRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        marginBottom: 5,
+    },
+    historialLabel: {
+        fontSize: 14,
+        color: "#666666",
+        fontWeight: "500",
+    },
+    historialValue: {
+        fontSize: 14,
+        color: "#222222",
+        fontWeight: "500",
+    },
+    historialButton: {
+        backgroundColor: "#3D67CD",
+        padding: 10,
+        borderRadius: 8,
+        alignItems: "center",
+        marginTop: 10,
+    },
+    historialButtonText: {
+        color: "#FFFFFF",
+        fontWeight: "bold",
+        fontSize: 14,
+    },
+    textoHora: {
+        fontSize: 16,
+        color: "#000000",
+        marginTop: 2,
     },
 })
 
