@@ -20,7 +20,8 @@ expo-env.d.ts
 firebaseApp.js
 .firebase/
 .firebaserc
-google-services.json
+**/google-services.json
+
 
 # Functions secrets
 functions/.env
