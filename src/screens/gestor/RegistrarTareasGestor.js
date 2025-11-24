@@ -1,5 +1,3 @@
-"use client"
-
 import AntDesign from "@expo/vector-icons/AntDesign"
 import Fontisto from "@expo/vector-icons/Fontisto"
 import Ionicons from "@expo/vector-icons/Ionicons"
@@ -395,6 +393,7 @@ const RegistrarTareasGestor = ({ navigation }) => {
                     await addDoc(collection(db, `TAREA/${nuevoNumero.toString()}/Subtareas`), {
                         nombre: sub.data().nombre,
                         descripcion: sub.data().descripcion,
+                        imagenAdjuntaInstrucciones: sub.data().imagenAdjuntaInstrucciones || [],
                         orden: sub.data().orden,
                         estado: "Pendiente",
                     })
@@ -410,7 +409,7 @@ const RegistrarTareasGestor = ({ navigation }) => {
 
             // Actualizar fecha última creación
             await updateDoc(doc(db, "TAREA_REPETITIVAS", idPlantilla), {
-                fechaUltimaCreacion: Timestamp.fromDate(fechaCreacion),
+                fechaUltimaCreacion: Timestamp.now(),
             })
 
             // Actualizar contador
