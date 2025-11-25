@@ -236,8 +236,8 @@ const UsuariosGestor = ({ navigation }) => {
                                     style={{
                                         position: 'absolute',
                                         top: 3,
-                                        right: 38,
-                                        padding: 4,
+                                        right: 45,
+                                        paddingVertical: 7,
                                         opacity: refreshing ? 0.5 : 1,
                                     }}
                                 >
@@ -253,7 +253,8 @@ const UsuariosGestor = ({ navigation }) => {
                                     right: 0,
                                     top: 0,
                                     backgroundColor: '#87aef0',
-                                    padding: 10,
+                                    padding: 11,
+                                    paddingVertical: 13,
                                     borderTopRightRadius: 20,
                                     borderBottomRightRadius: 20,
                                     opacity: refreshing ? 0.6 : 1,

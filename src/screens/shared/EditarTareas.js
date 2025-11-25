@@ -1,10 +1,9 @@
-"use client"
-
 import AntDesign from "@expo/vector-icons/AntDesign"
 import Fontisto from "@expo/vector-icons/Fontisto"
 import Ionicons from "@expo/vector-icons/Ionicons"
 import MaterialIcons from "@expo/vector-icons/MaterialIcons"
 import axios from "axios"
+import * as FileSystem from 'expo-file-system/legacy';
 import * as ImagePicker from "expo-image-picker"
 import { LinearGradient } from "expo-linear-gradient"
 import {
@@ -16,9 +15,9 @@ import {
     getFirestore,
     query,
     setDoc,
+    Timestamp,
     updateDoc,
     where,
-    Timestamp,
 } from "firebase/firestore"
 import { useEffect, useState } from "react"
 import {
@@ -657,6 +656,13 @@ const EditarTarea = ({ route, navigation }) => {
         setOpenPrioridad(false)
     }
 
+    async function uriToBase64(uri) {
+        const base64 = await FileSystem.readAsStringAsync(uri, {
+            encoding: FileSystem.EncodingType.Base64,
+        });
+        return `data:image/jpeg;base64,${base64}`;
+    }
+
     const actualizarTarea = async () => {
         if (loading) return
 
@@ -780,12 +786,10 @@ const EditarTarea = ({ route, navigation }) => {
                 if (uri.startsWith("http")) {
                     urls.push(uri)
                 } else {
+                    const base64Img = await uriToBase64(uri);
                     const data = new FormData()
-                    data.append("file", {
-                        uri,
-                        type: "image/jpeg",
-                        name: `tarea_${Date.now()}.jpg`,
-                    })
+
+                    data.append("file", base64Img);
                     data.append("upload_preset", cloudinaryConfig.uploadPreset)
 
                     try {
@@ -798,6 +802,11 @@ const EditarTarea = ({ route, navigation }) => {
                         console.log("[v0] Imagen subida:", res.data.secure_url)
                     } catch (err) {
                         console.error("[v0] Error al subir imagen:", err)
+                        Toast.show({
+                            type: "error",
+                            text1: "Error",
+                            text2: "No se pudo subir imagen a la tarea",
+                        })
                     }
                 }
             }
@@ -867,13 +876,12 @@ const EditarTarea = ({ route, navigation }) => {
                             if (uri.startsWith("http")) {
                                 urlsSubtarea.push(uri)
                             } else {
+                                const base64Img = await uriToBase64(uri);
                                 const data = new FormData()
-                                data.append("file", {
-                                    uri,
-                                    type: "image/jpeg",
-                                    name: `subtarea_${index + 1}_${Date.now()}.jpg`,
-                                })
-                                data.append("upload_preset", cloudinaryConfig.uploadPreset)
+
+                                data.append("file", base64Img);
+                                data.append("upload_preset", cloudinaryConfig.uploadPreset);
+
 
                                 try {
                                     const res = await axios.post(
@@ -884,6 +892,11 @@ const EditarTarea = ({ route, navigation }) => {
                                     urlsSubtarea.push(res.data.secure_url)
                                 } catch (err) {
                                     console.error("[v0] Error al subir imagen de subtarea:", err)
+                                    Toast.show({
+                                        type: "error",
+                                        text1: "Error",
+                                        text2: "No se pudo subir imagen de subtarea",
+                                    })
                                 }
                             }
                         }

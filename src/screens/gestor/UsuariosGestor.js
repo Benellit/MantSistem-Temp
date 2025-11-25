@@ -1,7 +1,7 @@
 import FontAwesome6 from '@expo/vector-icons/FontAwesome6';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { LinearGradient } from "expo-linear-gradient";
-import { collection, getDocs, getFirestore } from "firebase/firestore";
+import { collection, getDocs, getFirestore, query, orderBy } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, Image, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import BotonRegistrar from '../../components/BotonRegistrar';
@@ -48,7 +48,8 @@ const UsuariosGestor = ({ navigation }) => {
     const obtenerUsuarios = async () => {
         try {
             const usuariosRef = collection(db, 'USUARIO');
-            const snapshot = await getDocs(usuariosRef);
+            const q = query(usuariosRef, orderBy('fechaRegistro', 'desc'));
+            const snapshot = await getDocs(q);
             const usuariosData = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
@@ -226,8 +227,8 @@ const UsuariosGestor = ({ navigation }) => {
                                     style={{
                                         position: 'absolute',
                                         top: 3,
-                                        right: 38,
-                                        padding: 4,
+                                        right: 45,
+                                        paddingVertical: 7,
                                         opacity: refreshing ? 0.5 : 1,
                                     }}
                                 >
@@ -243,7 +244,8 @@ const UsuariosGestor = ({ navigation }) => {
                                     right: 0,
                                     top: 0,
                                     backgroundColor: '#87aef0',
-                                    padding: 10,
+                                    padding: 11,
+                                    paddingVertical: 13,
                                     borderTopRightRadius: 20,
                                     borderBottomRightRadius: 20,
                                     opacity: refreshing ? 0.6 : 1,

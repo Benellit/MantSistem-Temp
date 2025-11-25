@@ -1,3 +1,4 @@
+import * as FileSystem from "expo-file-system";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import Feather from "@expo/vector-icons/Feather";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -137,20 +138,22 @@ const RegistrarUsuariosGestor = ({ navigation }) => {
     }
   }, [profile, isGestor, sucursales]);
 
+  async function uriToBase64(uri) {
+    const base64 = await FileSystem.readAsStringAsync(uri, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+    return `data:image/jpeg;base64,${base64}`;
+  }
+
   // Función para subir imagen a Cloudinary
   const uploadImageToCloudinary = async (uri) => {
     try {
+      // Convertir archivo a base64
+      const base64Img = await uriToBase64(uri);
+
       const formDataImg = new FormData();
-
-      const file = {
-        uri,
-        type: "image/jpeg",
-        name: `user_${Date.now()}.jpg`,
-      };
-
-      formDataImg.append("file", file);
+      formDataImg.append("file", base64Img);
       formDataImg.append("upload_preset", cloudinaryConfig.uploadPreset);
-      formDataImg.append("cloud_name", cloudinaryConfig.cloudName);
 
       const response = await fetch(
         `https://api.cloudinary.com/v1_1/${cloudinaryConfig.cloudName}/image/upload`,
@@ -168,13 +171,20 @@ const RegistrarUsuariosGestor = ({ navigation }) => {
       if (data.secure_url) {
         return data.secure_url;
       } else {
+        console.error("Respuesta Cloudinary:", data);
         throw new Error("No se recibió URL de la imagen");
       }
     } catch (error) {
       console.error("Error subiendo a Cloudinary:", error);
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "No se pudo subir la imagen de la tarea",
+      })
       throw error;
     }
   };
+
 
   // Función para seleccionar imagen
   const pickImage = async () => {
@@ -751,7 +761,7 @@ const RegistrarUsuariosGestor = ({ navigation }) => {
                     style={[profile.modoOscuro ? styles.modalCloseButtonOscuro : styles.modalCloseButtonClaro]}
                     onPress={() => setShowRolModal(false)}
                   >
-                    <Text style={[styles.modalCloseButtonText, {color: profile.modoOscuro ? "#FFFFFF" : "black"}]}>Cancelar</Text>
+                    <Text style={[styles.modalCloseButtonText, { color: profile.modoOscuro ? "#FFFFFF" : "black" }]}>Cancelar</Text>
                   </TouchableOpacity>
                 </View>
               </View>

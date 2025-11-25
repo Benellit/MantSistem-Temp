@@ -169,8 +169,8 @@ export default function SucursalesAdmin({ navigation }) {
                   style={{
                     position: 'absolute',
                     top: 3,
-                    right: 38,
-                    padding: 4,
+                    right: 45,
+                    paddingVertical: 7,
                     opacity: refreshing ? 0.5 : 1,
                   }}
                 >
@@ -186,13 +186,14 @@ export default function SucursalesAdmin({ navigation }) {
                   right: 0,
                   top: 0,
                   backgroundColor: '#87aef0',
-                  padding: 10,
+                  padding: 11,
+                  paddingVertical: 13,
                   borderTopRightRadius: 20,
                   borderBottomRightRadius: 20,
                   opacity: refreshing ? 0.6 : 1,
                 }}
               >
-                <FontAwesome6 name="magnifying-glass" size={16} color={profile.modoOscuro ?  'black' : '#FFFF'} />
+                <FontAwesome6 name="magnifying-glass" size={16} color={profile.modoOscuro ? 'black' : '#FFFF'} />
               </TouchableOpacity>
             </View>
 
@@ -282,7 +283,7 @@ export default function SucursalesAdmin({ navigation }) {
                       <View style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>
                         <Ionicons name="location-outline" size={18} color={C.iconMain} />
                         <Text style={{ fontSize: 14, color: C.info, flex: 1 }}>
-                          {(s.dirCalle || "Calle")} {(s.dirColonia?`, ${s.dirColonia}` : "")}
+                          {(s.dirCalle || "Calle")} {(s.dirColonia ? `, ${s.dirColonia}` : "")}
                         </Text>
                       </View>
                       <View style={{ flexDirection: "row", alignItems: "center", gap: 7 }}>

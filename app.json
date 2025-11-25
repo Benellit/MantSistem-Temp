@@ -1,14 +1,14 @@
 {
   "expo": {
     "name": "Maintely",
-    "slug": "Maintely",
+    "slug": "maint",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/logoMaintely.jpg",
+    "icon": "./assets/logoMaintely.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "splash": {
-      "image": "./assets/logoMaintely.jpg",
+      "image": "./assets/logoMaintely.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -17,20 +17,17 @@
     },
     "android": {
       "package": "com.benellit.maintely",
-      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/logoMaintely.jpg",
+        "foregroundImage": "./assets/logoMaintely.png",
         "backgroundColor": "#ffffff"
+      },
+      "notification": {
+        "icon": "./assets/notification-icon.png"
       }
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "extra": {
-      "eas": {
-        "projectId": "081eb64c-d154-4635-95c4-d18c91ed8ffe"
-      }
-    },
-    "owner": "benellit"
+    "owner": "embenell"
   }
 }

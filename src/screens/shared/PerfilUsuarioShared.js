@@ -1,3 +1,4 @@
+import * as FileSystem from 'expo-file-system/legacy';
 import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -160,7 +161,7 @@ export default function PerfilUsuarioShared({ route, navigation }) {
         const ref = doc(db, "USUARIO", userId);
         const userDoc = await getDoc(ref);
         if (!userDoc.exists()) {
-        Toast.show({ type: "appError", text1: "Error", text2: "Usuario no encontrado" });          navigation.goBack();
+          Toast.show({ type: "appError", text1: "Error", text2: "Usuario no encontrado" }); navigation.goBack();
           return;
         }
 
@@ -223,30 +224,44 @@ export default function PerfilUsuarioShared({ route, navigation }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 
+  async function uriToBase64(uri) {
+    const base64 = await FileSystem.readAsStringAsync(uri, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+    return `data:image/jpeg;base64,${base64}`;
+  }
+
   // ===== Subir imagen a Cloudinary =====
   const uploadImageToCloudinary = async (uri) => {
     try {
+      // Convertimos el archivo a base64 para que Cloudinary lo acepte en APK
+      const base64Img = await uriToBase64(uri);
+
       const formData = new FormData();
-      formData.append("file", {
-        uri,
-        type: "image/jpeg",
-        name: `profile_${Date.now()}.jpg`,
-      });
+      formData.append("file", base64Img);
       formData.append("upload_preset", cloudinaryConfig.uploadPreset);
-      formData.append("cloud_name", cloudinaryConfig.cloudName);
 
       const resp = await fetch(
         `https://api.cloudinary.com/v1_1/${cloudinaryConfig.cloudName}/image/upload`,
-        { method: "POST", body: formData, headers: { Accept: "application/json" } }
+        {
+          method: "POST",
+          body: formData,
+          headers: { Accept: "application/json" },
+        }
       );
+
       const data = await resp.json();
+
       if (data.secure_url) return data.secure_url;
-      throw new Error("No se recibió URL de la imagen");
+
+      console.log("Respuesta de Cloudinary:", data);
+      throw new Error("No se recibió secure_url desde Cloudinary");
     } catch (e) {
       console.error("Error subiendo a Cloudinary:", e);
       throw e;
     }
   };
+
 
   const pickImageFromGallery = async () => {
     try {
@@ -473,38 +488,38 @@ export default function PerfilUsuarioShared({ route, navigation }) {
         </TouchableOpacity>
 
         <View style={{ flex: 1, alignItems: "center" }}>
-  <Text
-    style={[
-      styles.subtitle,
-      { 
-        color: theme.textMuted,
-        fontSize: 14,
-        marginBottom: 0,
-        letterSpacing: 0.3,
-      },
-    ]}
-  >
-    Perfil de usuario
-  </Text>
+          <Text
+            style={[
+              styles.subtitle,
+              {
+                color: theme.textMuted,
+                fontSize: 14,
+                marginBottom: 0,
+                letterSpacing: 0.3,
+              },
+            ]}
+          >
+            Perfil de usuario
+          </Text>
 
-  <Text
-    style={[
-      styles.title,
-      {
-        color: theme.primary,
-        fontSize: 24,
-        fontWeight: "700",
-        textAlign: "center",
-        maxWidth: "80%", // evita que se salga
-      },
-    ]}
-    numberOfLines={1}
-    ellipsizeMode="tail"
-  >
-    {`${userData.primerNombre || ""} ${userData.primerApellido || ""}`.trim() ||
-      "Usuario"}
-  </Text>
-</View>
+          <Text
+            style={[
+              styles.title,
+              {
+                color: theme.primary,
+                fontSize: 24,
+                fontWeight: "700",
+                textAlign: "center",
+                maxWidth: "80%", // evita que se salga
+              },
+            ]}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {`${userData.primerNombre || ""} ${userData.primerApellido || ""}`.trim() ||
+              "Usuario"}
+          </Text>
+        </View>
 
 
 
@@ -742,7 +757,7 @@ export default function PerfilUsuarioShared({ route, navigation }) {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Seleccionar Rol</Text>
             <ScrollView style={styles.modalScroll}>
-               {roleOptions.map((rol) => (
+              {roleOptions.map((rol) => (
                 <TouchableOpacity
                   key={rol}
                   style={styles.modalOption}
@@ -854,16 +869,16 @@ function createStyles(theme) {
     loadingText: { marginTop: 10, fontSize: 16, color: theme.textMuted },
 
     header: {
-  flexDirection: "row",
-  justifyContent: "space-between",
-  alignItems: "center",
-  paddingHorizontal: 20,
-  paddingTop: 40,
-  paddingBottom: 20,
-  backgroundColor: theme.card,
-  borderBottomWidth: 1,
-  borderBottomColor: theme.borderSubtle, // ← antes era un ternario rgba(...)
-},
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingHorizontal: 20,
+      paddingTop: 40,
+      paddingBottom: 20,
+      backgroundColor: theme.card,
+      borderBottomWidth: 1,
+      borderBottomColor: theme.borderSubtle, // ← antes era un ternario rgba(...)
+    },
     headerIconBtn: {
       width: 40,
       height: 40,
@@ -974,21 +989,21 @@ function createStyles(theme) {
     inputDisabled: { backgroundColor: theme.inputDisabledBg, color: theme.textMuted },
 
     selectButton: {
-  flexDirection: "row",
-  justifyContent: "space-between",
-  alignItems: "center",
-  borderWidth: 1,
-  borderColor: theme.border,
-  borderRadius: 12,
-  paddingHorizontal: 14,
-  paddingVertical: 12,
-  backgroundColor: theme.inputBg,     // <- igual que inputs
-  shadowColor: "#000",
-  shadowOpacity: theme.shadow,
-  shadowOffset: { width: 0, height: 2 },
-  shadowRadius: 4,
-  elevation: 2,
-},
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      borderWidth: 1,
+      borderColor: theme.border,
+      borderRadius: 12,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      backgroundColor: theme.inputBg,     // <- igual que inputs
+      shadowColor: "#000",
+      shadowOpacity: theme.shadow,
+      shadowOffset: { width: 0, height: 2 },
+      shadowRadius: 4,
+      elevation: 2,
+    },
 
     selectButtonText: { fontSize: 15, color: theme.inputText },
 

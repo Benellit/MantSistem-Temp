@@ -264,10 +264,10 @@ const ModalFiltros = ({ open, setOpenFiltros, setFiltros, filtros }) => {
                             <TouchableOpacity
                                 style={[styles.botonQuitarfiltros, { flex: 1 }]}
                                 onPress={() => {
-                                    setValueEstado('');
-                                    setValuePrioridad('');
+                                    setValueEstado("");
+                                    setValuePrioridad("");
                                     if (profile.rol === "Administrador") {
-                                        setValueSucursal('');
+                                        setValueSucursal("");
                                     }
                                 }}
                             >

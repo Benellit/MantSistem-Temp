@@ -1,18 +1,44 @@
-import AntDesign from "@expo/vector-icons/AntDesign"
-import Feather from "@expo/vector-icons/Feather"
-import FontAwesome from "@expo/vector-icons/FontAwesome"
-import FontAwesome5 from "@expo/vector-icons/FontAwesome5"
-import Ionicons from "@expo/vector-icons/Ionicons"
-import MaterialIcons from "@expo/vector-icons/MaterialIcons"
-import { useFocusEffect } from '@react-navigation/native'
-import axios from "axios"
-import * as ImagePicker from "expo-image-picker"
-import { addDoc, arrayRemove, collection, doc, getDoc, getDocs, getFirestore, Timestamp, updateDoc, } from "firebase/firestore"
-import { useCallback, useEffect, useRef, useState } from "react"
-import { ActivityIndicator, Alert, Animated, Dimensions, FlatList, Image, Modal, PanResponder, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View, } from "react-native"
-import Toast from "react-native-toast-message"
-import appFirebase, { cloudinaryConfig } from "../../credenciales/Credenciales"
-import { useAuth } from "../login/AuthContext"
+import AntDesign from "@expo/vector-icons/AntDesign";
+import Feather from "@expo/vector-icons/Feather";
+import FontAwesome from "@expo/vector-icons/FontAwesome";
+import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
+import Ionicons from "@expo/vector-icons/Ionicons";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { useFocusEffect } from "@react-navigation/native";
+import axios from "axios";
+import * as FileSystem from 'expo-file-system/legacy';
+import * as ImagePicker from "expo-image-picker";
+import {
+    addDoc,
+    arrayRemove,
+    collection,
+    doc,
+    getDoc,
+    getDocs,
+    getFirestore,
+    Timestamp,
+    updateDoc,
+} from "firebase/firestore";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+    ActivityIndicator,
+    Alert,
+    Animated,
+    Dimensions,
+    FlatList,
+    Image,
+    Modal,
+    PanResponder,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from "react-native";
+import Toast from "react-native-toast-message";
+import appFirebase, { cloudinaryConfig } from "../../credenciales/Credenciales";
+import { useAuth } from "../login/AuthContext";
 
 const { height } = Dimensions.get("window")
 const windowWidth = Dimensions.get("window").width
@@ -198,6 +224,13 @@ const TareaDetails = ({ route, navigation }) => {
         }
     }
 
+    async function uriToBase64(uri) {
+        const base64 = await FileSystem.readAsStringAsync(uri, {
+            encoding: FileSystem.EncodingType.Base64,
+        });
+        return `data:image/jpeg;base64,${base64}`;
+    }
+
     const fotografias = async () => {
         try {
             const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync()
@@ -237,32 +270,33 @@ const TareaDetails = ({ route, navigation }) => {
             const urls = []
 
             for (const asset of result.assets) {
-                const data = new FormData()
-                data.append("file", {
-                    uri: asset.uri,
-                    type: "image/jpeg",
-                    name: asset.fileName || `foto_${Date.now()}.jpg`,
-                })
-                data.append("upload_preset", cloudinaryConfig.uploadPreset)
+                const base64Img = await uriToBase64(asset.uri); // <-- usar asset.uri
+                const data = new FormData();
 
-                const res = await axios.post(
-                    `https://api.cloudinary.com/v1_1/${cloudinaryConfig.cloudName}/image/upload`,
-                    data,
-                    {
-                        headers: { "Content-Type": "multipart/form-data" },
-                        timeout: 30000,
-                    },
-                )
+                data.append("file", base64Img);
+                data.append("upload_preset", cloudinaryConfig.uploadPreset);
 
-                urls.push(res.data.secure_url)
-                console.log("✅ Imagen subida:", res.data.secure_url)
+                try {
+                    const res = await axios.post(
+                        `https://api.cloudinary.com/v1_1/${cloudinaryConfig.cloudName}/image/upload`,
+                        data,
+                        {
+                            headers: { "Content-Type": "multipart/form-data" },
+                            timeout: 30000,
+                        }
+                    );
+
+                    urls.push(res.data.secure_url);
+                    console.log("✅ Imagen subida:", res.data.secure_url);
+                } catch (err) {
+                    console.error("❌ Error al subir imagen:", err.response?.data || err.message);
+                    Toast.show({
+                        type: "appError",
+                        text1: "Error",
+                        text2: "No se pudo subir la imagen",
+                    });
+                }
             }
-
-            Toast.show({
-                type: "appSuccess",
-                text1: "Éxito",
-                text2: `${urls.length} imagen(es) subida(s) correctamente`,
-            })
 
             setFoto(urls)
             await saveEvidencias(urls, tipoAccion, idActual)
@@ -428,7 +462,6 @@ const TareaDetails = ({ route, navigation }) => {
                 evidenciasDataTarea.sort((a, b) => b.fechaDeEntrega - a.fechaDeEntrega)
 
                 setEvidenciasTarea(evidenciasDataTarea)
-
             } catch (error) {
                 console.error("Error cargando evidencias de tarea:", error)
                 setEvidenciasTarea([])
@@ -1027,15 +1060,14 @@ const TareaDetails = ({ route, navigation }) => {
 
     const idPlantilla =
         tarea?.IDPlantilla?.id ||
-        tarea?.IDPlantilla?.path?.split('/')?.pop() ||
-        tarea?.IDPlantilla?.referencePath?.split('/')?.pop() ||
-        null;
+        tarea?.IDPlantilla?.path?.split("/")?.pop() ||
+        tarea?.IDPlantilla?.referencePath?.split("/")?.pop() ||
+        null
 
-    const [desplegarOpciones, setDesplegarOpciones] = useState(false);
-
+    const [desplegarOpciones, setDesplegarOpciones] = useState(false)
 
     const navegarEditPlantillaRepetitivas = (IDTareaRepetitiva) => {
-        setDesplegarOpciones(false);
+        setDesplegarOpciones(false)
         navigation.navigate("EditarTareas", {
             id: IDTareaRepetitiva,
             tareaRepetitiva: true,
@@ -1044,7 +1076,7 @@ const TareaDetails = ({ route, navigation }) => {
     }
 
     const navegarEditTareaNormales = (IDTarea) => {
-        setDesplegarOpciones(false);
+        setDesplegarOpciones(false)
         navigation.navigate("EditarTareas", {
             id: IDTarea,
             tareaRepetitiva: false,
@@ -1054,17 +1086,17 @@ const TareaDetails = ({ route, navigation }) => {
 
     useFocusEffect(
         useCallback(() => {
-            cargarDatos();
-        }, [])
-    );
+            cargarDatos()
+        }, []),
+    )
 
-    let creacionDespuesFecha = false; // valor por defecto
+    let creacionDespuesFecha = false // valor por defecto
 
     if (!tarea?.fechaCreacion) {
-        console.log("fechaCreacion no existe");
+        console.log("fechaCreacion no existe")
     } else {
-        creacionDespuesFecha = new Date() <= tarea.fechaCreacion.toDate();
-        console.log(creacionDespuesFecha);
+        creacionDespuesFecha = new Date() <= tarea.fechaCreacion.toDate()
+        console.log(creacionDespuesFecha)
     }
 
     if (loading) {
@@ -1088,6 +1120,9 @@ const TareaDetails = ({ route, navigation }) => {
                     alignItems: "center",
                     borderBottomWidth: 1,
                     borderBottomColor: profile.modoOscuro ? "#2C2C2C" : "#E5E5E5",
+                    zIndex: 1000,
+                    elevation: 1000,
+                    backgroundColor: profile.modoOscuro ? "#1A1A1A" : "#F8F9FA",
                 }}
             >
                 <TouchableOpacity
@@ -1097,79 +1132,70 @@ const TareaDetails = ({ route, navigation }) => {
                     <Ionicons name="chevron-back" size={24} color={profile.modoOscuro ? "#FFFF" : "#1A1A1A"} />
                 </TouchableOpacity>
                 {(profile.rol === "Administrador" || profile.rol === "Gestor") && (
-                    <View>
-                        {
-                            tarea.IDPlantilla ? (
-                                <View style={{ position: 'relative', minWidth: 180 }}>
-                                    <TouchableOpacity
-                                        onPress={() => setDesplegarOpciones(prev => !prev)}
+                    <View style={{ zIndex: 2000 }}>
+                        {tarea.IDPlantilla ? (
+                            <View style={{ position: "relative", minWidth: 180, zIndex: 2000 }}>
+                                <TouchableOpacity
+                                    onPress={() => setDesplegarOpciones((prev) => !prev)}
+                                    style={{
+                                        padding: 8,
+                                        borderRadius: 8,
+                                        backgroundColor: profile.modoOscuro ? "#2C2C2C" : "#FFF",
+                                        alignSelf: "flex-end",
+                                    }}
+                                >
+                                    <Feather name="edit" size={22} color={profile.modoOscuro ? "#FFF" : "#1A1A1A"} />
+                                </TouchableOpacity>
+
+                                {desplegarOpciones && (
+                                    <View
+                                        pointerEvents="auto"
                                         style={{
-                                            padding: 8,
-                                            borderRadius: 8,
-                                            backgroundColor: profile.modoOscuro ? '#2C2C2C' : '#FFF',
-                                            alignSelf: 'flex-end',
+                                            position: "absolute",
+                                            top: 45,
+                                            right: 0,
+                                            zIndex: 10000,
+                                            elevation: 20,
                                         }}
                                     >
-                                        <Feather
-                                            name="edit"
-                                            size={22}
-                                            color={profile.modoOscuro ? '#FFF' : '#1A1A1A'}
-                                        />
-                                    </TouchableOpacity>
-
-                                    {desplegarOpciones && (
                                         <View
                                             style={{
-                                                position: 'absolute',
-                                                top: 45,
-                                                right: 0,
-                                                backgroundColor: profile.modoOscuro ? '#2C2C2C' : '#FFF',
+                                                backgroundColor: profile.modoOscuro ? "#2C2C2C" : "#FFF",
                                                 borderRadius: 8,
                                                 padding: 8,
-                                                zIndex: 5000,
-                                                elevation: 5,
-                                                shadowColor: '#000',
+                                                shadowColor: "#000",
                                                 shadowOpacity: 0.2,
                                                 shadowOffset: { width: 0, height: 2 },
                                                 shadowRadius: 4,
-                                                alignSelf: 'flex-start',
+                                                elevation: 20,
                                             }}
                                         >
-                                            <TouchableOpacity
-                                                onPress={() =>
-                                                    navegarEditTareaNormales(id)
-                                                }
-                                                style={{ paddingVertical: 6 }}
-                                            >
-                                                <Text style={{ color: profile.modoOscuro ? '#FFF' : '#000' }}>
-                                                    Editar tarea seleccionada
-                                                </Text>
+                                            <TouchableOpacity onPress={() => navegarEditTareaNormales(id)} style={{ paddingVertical: 6 }}>
+                                                <Text style={{ color: profile.modoOscuro ? "#FFF" : "#000" }}>Editar tarea seleccionada</Text>
                                             </TouchableOpacity>
 
                                             <View style={profile.modoOscuro ? styles.dividerOscuro : styles.dividerClaro} />
 
                                             <TouchableOpacity
-                                                onPress={() =>
-                                                    navegarEditPlantillaRepetitivas(idPlantilla)
-                                                }
+                                                onPress={() => navegarEditPlantillaRepetitivas(idPlantilla)}
                                                 style={{ paddingVertical: 6 }}
                                             >
-                                                <Text style={{ color: profile.modoOscuro ? '#FFF' : '#000' }}>
+                                                <Text style={{ color: profile.modoOscuro ? "#FFF" : "#000" }}>
                                                     Editar plantilla de la tarea repetitiva
                                                 </Text>
                                             </TouchableOpacity>
                                         </View>
-                                    )}
-                                </View>
-                            ) : (
-                                <TouchableOpacity
-                                    onPress={() => navegarEditTareaNormales(id)}
-                                    style={{ padding: 8, borderRadius: 8, backgroundColor: profile.modoOscuro ? "#2C2C2C" : "#FFF" }}
-                                >
-                                    <Feather name="edit" size={22} color={profile.modoOscuro ? "#FFFF" : "#1A1A1A"} />
-                                </TouchableOpacity>
-                            )
-                        }
+                                    </View>
+                                )}
+                            </View>
+                        ) : (
+                            <TouchableOpacity
+                                onPress={() => navegarEditTareaNormales(id)}
+                                style={{ padding: 8, borderRadius: 8, backgroundColor: profile.modoOscuro ? "#2C2C2C" : "#FFF" }}
+                            >
+                                <Feather name="edit" size={22} color={profile.modoOscuro ? "#FFFF" : "#1A1A1A"} />
+                            </TouchableOpacity>
+                        )}
                     </View>
                 )}
             </View>
@@ -1631,72 +1657,69 @@ const TareaDetails = ({ route, navigation }) => {
                                                 </TouchableOpacity>
                                             </View>
 
-                                            {anteriorCompletada &&
-                                                item.estado !== "Revisada" &&
-                                                profile.rol === "Tecnico" && (
-                                                    <View style={{ gap: 8 }}>
-                                                        {creacionDespuesFecha == false && (
-                                                            <View>
-                                                                {item.estado !== "Completada" && item.estado !== "Revisada" && (
-                                                                    <TouchableOpacity
+                                            {anteriorCompletada && item.estado !== "Revisada" && profile.rol === "Tecnico" && (
+                                                <View style={{ gap: 8 }}>
+                                                    {creacionDespuesFecha == false && (
+                                                        <View>
+                                                            {item.estado !== "Completada" && item.estado !== "Revisada" && (
+                                                                <TouchableOpacity
+                                                                    style={{
+                                                                        flexDirection: "row",
+                                                                        alignItems: "center",
+                                                                        justifyContent: "center",
+                                                                        gap: 8,
+                                                                        paddingVertical: 12,
+                                                                        paddingHorizontal: 16,
+                                                                        borderRadius: 12,
+                                                                        borderWidth: 2,
+                                                                        borderStyle: "dashed",
+                                                                        borderColor: profile.modoOscuro ? "#444" : "#D0D0D0",
+                                                                        marginBottom: 10,
+                                                                    }}
+                                                                    onPress={() => openSheet("subtarea", item.id)}
+                                                                >
+                                                                    <AntDesign name="plus" size={20} color={profile.modoOscuro ? "#888" : "#666"} />
+                                                                    <Text
                                                                         style={{
-                                                                            flexDirection: "row",
-                                                                            alignItems: "center",
-                                                                            justifyContent: "center",
-                                                                            gap: 8,
-                                                                            paddingVertical: 12,
-                                                                            paddingHorizontal: 16,
-                                                                            borderRadius: 12,
-                                                                            borderWidth: 2,
-                                                                            borderStyle: "dashed",
-                                                                            borderColor: profile.modoOscuro ? "#444" : "#D0D0D0",
-                                                                            marginBottom: 10,
+                                                                            color: profile.modoOscuro ? "#888" : "#666",
+                                                                            fontWeight: "600",
+                                                                            fontSize: 15,
                                                                         }}
-                                                                        onPress={() => openSheet("subtarea", item.id)}
                                                                     >
-                                                                        <AntDesign name="plus" size={20} color={profile.modoOscuro ? "#888" : "#666"} />
-                                                                        <Text
-                                                                            style={{
-                                                                                color: profile.modoOscuro ? "#888" : "#666",
-                                                                                fontWeight: "600",
-                                                                                fontSize: 15,
-                                                                            }}
-                                                                        >
-                                                                            Adjuntar Evidencia o Reporte
-                                                                        </Text>
-                                                                    </TouchableOpacity>
-                                                                )}
+                                                                        Adjuntar Evidencia o Reporte
+                                                                    </Text>
+                                                                </TouchableOpacity>
+                                                            )}
 
-                                                                {mostrarBoton && (
-                                                                    <TouchableOpacity
-                                                                        style={[
-                                                                            {
-                                                                                paddingVertical: 14,
-                                                                                borderRadius: 12,
-                                                                                alignItems: "center",
-                                                                            },
-                                                                            item.estado === "Pendiente"
-                                                                                ? { backgroundColor: "#57A7FE" }
-                                                                                : item.estado === "En Proceso"
-                                                                                    ? { backgroundColor: "#47A997" }
-                                                                                    : { backgroundColor: "#999" },
-                                                                        ]}
-                                                                        onPress={() => updateEstadoSubtarea(true, item.id, item.estado)}
-                                                                    >
-                                                                        <Text style={{ color: "white", fontWeight: "700", fontSize: 15 }}>
-                                                                            {item.estado === "Pendiente"
-                                                                                ? "Marcar En Proceso"
-                                                                                : item.estado === "En Proceso"
-                                                                                    ? "Marcar Completada"
-                                                                                    : "Cancelar Entrega"}
-                                                                        </Text>
-                                                                    </TouchableOpacity>
-                                                                )}
-                                                            </View>
-                                                        )}
-
-                                                    </View>
-                                                )}
+                                                            {mostrarBoton && (
+                                                                <TouchableOpacity
+                                                                    style={[
+                                                                        {
+                                                                            paddingVertical: 14,
+                                                                            borderRadius: 12,
+                                                                            alignItems: "center",
+                                                                        },
+                                                                        item.estado === "Pendiente"
+                                                                            ? { backgroundColor: "#57A7FE" }
+                                                                            : item.estado === "En Proceso"
+                                                                                ? { backgroundColor: "#47A997" }
+                                                                                : { backgroundColor: "#999" },
+                                                                    ]}
+                                                                    onPress={() => updateEstadoSubtarea(true, item.id, item.estado)}
+                                                                >
+                                                                    <Text style={{ color: "white", fontWeight: "700", fontSize: 15 }}>
+                                                                        {item.estado === "Pendiente"
+                                                                            ? "Marcar En Proceso"
+                                                                            : item.estado === "En Proceso"
+                                                                                ? "Marcar Completada"
+                                                                                : "Cancelar Entrega"}
+                                                                    </Text>
+                                                                </TouchableOpacity>
+                                                            )}
+                                                        </View>
+                                                    )}
+                                                </View>
+                                            )}
                                         </View>
                                     )
                                 })}
@@ -1927,11 +1950,7 @@ const TareaDetails = ({ route, navigation }) => {
                                 Selecciona una opción
                             </Text>
                             <TouchableOpacity onPress={closeSheet} style={{ padding: 8 }}>
-                                <AntDesign
-                                    name="close"
-                                    size={22}
-                                    color={profile.modoOscuro ? "#888" : "#666"}
-                                />
+                                <AntDesign name="close" size={22} color={profile.modoOscuro ? "#888" : "#666"} />
                             </TouchableOpacity>
                         </View>
 
@@ -1958,11 +1977,7 @@ const TareaDetails = ({ route, navigation }) => {
                                         alignItems: "center",
                                     }}
                                 >
-                                    <Feather
-                                        name="file-text"
-                                        size={20}
-                                        color={profile.modoOscuro ? "#888" : "#666"}
-                                    />
+                                    <Feather name="file-text" size={20} color={profile.modoOscuro ? "#888" : "#666"} />
                                 </View>
                                 <Text
                                     style={{
@@ -1997,11 +2012,7 @@ const TareaDetails = ({ route, navigation }) => {
                                         alignItems: "center",
                                     }}
                                 >
-                                    <FontAwesome
-                                        name="picture-o"
-                                        size={20}
-                                        color={profile.modoOscuro ? "#888" : "#666"}
-                                    />
+                                    <FontAwesome name="picture-o" size={20} color={profile.modoOscuro ? "#888" : "#666"} />
                                 </View>
                                 <Text
                                     style={{
@@ -2017,7 +2028,6 @@ const TareaDetails = ({ route, navigation }) => {
                     </ScrollView>
                 </Animated.View>
             )}
-
 
             <Modal transparent visible={modalReporte} animationType="fade" onRequestClose={() => setModalReporte(false)}>
                 <View
@@ -2193,10 +2203,10 @@ const TareaDetails = ({ route, navigation }) => {
                                 evidenciasActuales.map((evidencia, index) => {
                                     const fechaEntregaTarea = tarea.fechaEntrega?.toDate
                                         ? tarea.fechaEntrega.toDate()
-                                        : new Date(tarea.fechaEntrega);
+                                        : new Date(tarea.fechaEntrega)
 
-                                    const fechaEntregaEvidencia = new Date(evidencia.fechaDeEntrega);
-                                    const fueraDelTiempo = fechaEntregaEvidencia > fechaEntregaTarea;
+                                    const fechaEntregaEvidencia = new Date(evidencia.fechaDeEntrega)
+                                    const fueraDelTiempo = fechaEntregaEvidencia > fechaEntregaTarea
                                     return (
                                         <View
                                             key={index}
@@ -2242,11 +2252,7 @@ const TareaDetails = ({ route, navigation }) => {
                                                         </Text>
                                                         <Text
                                                             style={{
-                                                                color: fueraDelTiempo
-                                                                    ? "#F5615C"
-                                                                    : profile.modoOscuro
-                                                                        ? "#888"
-                                                                        : "#999",
+                                                                color: fueraDelTiempo ? "#F5615C" : profile.modoOscuro ? "#888" : "#999",
                                                                 fontSize: 12,
                                                                 marginTop: 2,
                                                             }}
@@ -2372,19 +2378,16 @@ const TareaDetails = ({ route, navigation }) => {
                                 </View>
                             ) : (
                                 reportesActuales.map((reporte, index) => {
-
                                     // 🟥 Fecha límite de la tarea
                                     const entregaTarea = tarea.fechaEntrega?.toDate
                                         ? tarea.fechaEntrega.toDate()
-                                        : new Date(tarea.fechaEntrega);
+                                        : new Date(tarea.fechaEntrega)
 
                                     // 🟥 Fecha del reporte (la tuya)
-                                    const fechaReporte = reporte.fecha?.toDate
-                                        ? reporte.fecha.toDate()
-                                        : new Date(reporte.fecha);
+                                    const fechaReporte = reporte.fecha?.toDate ? reporte.fecha.toDate() : new Date(reporte.fecha)
 
                                     // 🟥 Determinar si está fuera del tiempo
-                                    const fueraDelTiempo = fechaReporte > entregaTarea;
+                                    const fueraDelTiempo = fechaReporte > entregaTarea
 
                                     return (
                                         <View
@@ -2397,9 +2400,7 @@ const TareaDetails = ({ route, navigation }) => {
                                             }}
                                         >
                                             <TouchableOpacity
-                                                onPress={() =>
-                                                    setExpandidoReportes((prev) => ({ ...prev, [index]: !prev[index] }))
-                                                }
+                                                onPress={() => setExpandidoReportes((prev) => ({ ...prev, [index]: !prev[index] }))}
                                                 style={{
                                                     flexDirection: "row",
                                                     justifyContent: "space-between",
@@ -2498,10 +2499,9 @@ const TareaDetails = ({ route, navigation }) => {
                                                 </View>
                                             )}
                                         </View>
-                                    );
+                                    )
                                 })
                             )}
-
                         </ScrollView>
                     </View>
                 </View>

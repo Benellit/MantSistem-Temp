@@ -1,3 +1,4 @@
+import * as FileSystem from 'expo-file-system/legacy';
 import AntDesign from "@expo/vector-icons/AntDesign"
 import Fontisto from "@expo/vector-icons/Fontisto"
 import Ionicons from "@expo/vector-icons/Ionicons"
@@ -544,6 +545,13 @@ const RegistrarTareasGestor = ({ navigation }) => {
         await ejecutarGuardadoTarea()
     }
 
+    async function uriToBase64(uri) {
+        const base64 = await FileSystem.readAsStringAsync(uri, {
+            encoding: FileSystem.EncodingType.Base64,
+        });
+        return `data:image/jpeg;base64,${base64}`;
+    }
+
     const ejecutarGuardadoTarea = async (crearTareaAhora = false) => {
         setLoading(true)
 
@@ -560,12 +568,10 @@ const RegistrarTareasGestor = ({ navigation }) => {
                 console.log(`Subiendo ${imagenes.length} imágenes a Cloudinary...`)
 
                 for (const uri of imagenes) {
+                    const base64Img = await uriToBase64(uri);
                     const data = new FormData()
-                    data.append("file", {
-                        uri,
-                        type: "image/jpeg",
-                        name: `tarea_${Date.now()}.jpg`,
-                    })
+
+                    data.append("file", base64Img);
                     data.append("upload_preset", cloudinaryConfig.uploadPreset)
 
                     try {
@@ -722,12 +728,10 @@ const RegistrarTareasGestor = ({ navigation }) => {
                                 console.log(`Subiendo ${subtarea.imagenesAdjuntas.length} imágenes de la subtarea ${index + 1}...`)
 
                                 for (const uri of subtarea.imagenesAdjuntas) {
+                                    const base64Img = await uriToBase64(uri);
                                     const data = new FormData()
-                                    data.append("file", {
-                                        uri,
-                                        type: "image/jpeg",
-                                        name: `subtarea_${index + 1}_${Date.now()}.jpg`,
-                                    })
+
+                                    data.append("file", base64Img);
                                     data.append("upload_preset", cloudinaryConfig.uploadPreset)
 
                                     try {
@@ -740,6 +744,11 @@ const RegistrarTareasGestor = ({ navigation }) => {
                                         console.log("✅ Imagen subida:", res.data.secure_url)
                                     } catch (err) {
                                         console.error("❌ Error al subir imagen:", err.response?.data || err.message)
+                                        Toast.show({
+                                            type: "error",
+                                            text1: "Error",
+                                            text2: "No se pudo subir imagen",
+                                        })
                                     }
                                 }
                             } else {
@@ -850,6 +859,11 @@ const RegistrarTareasGestor = ({ navigation }) => {
                                         console.log("✅ Imagen subida:", res.data.secure_url)
                                     } catch (err) {
                                         console.error("❌ Error al subir imagen:", err.response?.data || err.message)
+                                        Toast.show({
+                                            type: "error",
+                                            text1: "Error",
+                                            text2: "No se pudo subir imagen",
+                                        })
                                     }
                                 }
                             } else {

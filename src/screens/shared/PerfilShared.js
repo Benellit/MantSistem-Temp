@@ -1,3 +1,4 @@
+import * as FileSystem from 'expo-file-system/legacy';
 import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
@@ -166,39 +167,52 @@ export default function PerfilShared({ navigation }) {
     return JSON.stringify(userData) !== JSON.stringify(initialUserData);
   }, [userData, initialUserData]);
 
+  async function uriToBase64(uri) {
+    const base64 = await FileSystem.readAsStringAsync(uri, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+    return `data:image/jpeg;base64,${base64}`;
+  }
+
   // Subir imagen a Cloudinary
   const uploadImageToCloudinary = async (uri) => {
     try {
+      // Convertir archivo local a base64
+      const base64Img = await uriToBase64(uri);
+
       const formData = new FormData();
-
-      const file = {
-        uri,
-        type: "image/jpeg",
-        name: `profile_${Date.now()}.jpg`,
-      };
-
-      formData.append("file", file);
+      formData.append("file", base64Img);
       formData.append("upload_preset", cloudinaryConfig.uploadPreset);
-      formData.append("cloud_name", cloudinaryConfig.cloudName);
 
       const response = await fetch(
         `https://api.cloudinary.com/v1_1/${cloudinaryConfig.cloudName}/image/upload`,
         {
           method: "POST",
           body: formData,
-          headers: { Accept: "application/json" },
+          headers: {
+            Accept: "application/json",
+          },
         }
       );
 
       const data = await response.json();
 
       if (data.secure_url) return data.secure_url;
-      throw new Error("No se recibió URL de la imagen");
+      else {
+        console.log("Cloudinary response:", data);
+        throw new Error("Cloudinary no regresó secure_url");
+      }
     } catch (error) {
       console.error("Error subiendo a Cloudinary:", error);
+      Toast.show({
+        type: "appError",
+        text1: "Error",
+        text2: "No se pudo subir imagen",
+      });
       throw error;
     }
   };
+
 
   // Galería
   const pickImageFromGallery = async () => {

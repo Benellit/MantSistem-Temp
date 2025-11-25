@@ -113,13 +113,19 @@ export default function TareasShared({ navigation }) {
                             tecnico: { id: docSnap.id, ...tecnicoData }
                         };
 
-                        if (filtros.estado && tareaData.estado !== filtros.estado) return null;
-                        if (filtros.prioridad && tareaData.prioridad !== filtros.prioridad) return null;
+                        // Normalizar filtros
+                        const estadoFiltro = filtros.estado || null;
+                        const prioridadFiltro = filtros.prioridad || null;
+                        const sucursalFiltro = filtros.sucursal || null;
 
-                        if (filtros.sucursal) {
+                        // Filtrar tareas manualmente
+                        if (estadoFiltro && tareaData.estado !== estadoFiltro) return null;
+                        if (prioridadFiltro && tareaData.prioridad !== prioridadFiltro) return null;
+                        if (sucursalFiltro) {
                             const sucursalId = tareaData.IDSucursal.id || tareaData.IDSucursal;
-                            if (sucursalId !== filtros.sucursal) return null;
+                            if (sucursalId !== sucursalFiltro) return null;
                         }
+
 
                         if (busqueda && !tareaData.nombre.toLowerCase().includes(busqueda.toLowerCase())) {
                             return null;
@@ -381,8 +387,8 @@ export default function TareasShared({ navigation }) {
                                     style={{
                                         position: "absolute",
                                         top: 3,
-                                        right: 38,
-                                        padding: 4,
+                                        right: 45,
+                                        paddingVertical: 7,
                                         opacity: refreshing ? 0.5 : 1,
                                     }}
                                 >
@@ -398,9 +404,11 @@ export default function TareasShared({ navigation }) {
                                     right: 0,
                                     top: 0,
                                     backgroundColor: "#87aef0",
-                                    padding: 10,
+                                    padding: 11,
+                                    paddingVertical: 13,
                                     borderTopRightRadius: 20,
                                     borderBottomRightRadius: 20,
+                                    opacity: refreshing ? 0.6 : 1,
                                 }}
                             >
                                 <FontAwesome6
